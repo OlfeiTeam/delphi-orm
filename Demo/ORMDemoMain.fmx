@@ -1,0 +1,73 @@
+object frmMain: TfrmMain
+  Left = 0
+  Top = 0
+  Caption = 'HRC ORM Demo'
+  ClientHeight = 480
+  ClientWidth = 640
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  DesignerMasterStyle = 0
+  object btnCollection: TButton
+    Align = Bottom
+    Margins.Left = 10.000000000000000000
+    Margins.Top = 10.000000000000000000
+    Margins.Right = 10.000000000000000000
+    Margins.Bottom = 10.000000000000000000
+    Position.X = 10.000000000000000000
+    Position.Y = 336.000000000000000000
+    Size.Width = 620.000000000000000000
+    Size.Height = 38.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Text = 'Collection'
+    OnClick = btnCollectionClick
+  end
+  object mmoTest: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Align = Client
+    Margins.Left = 10.000000000000000000
+    Margins.Top = 10.000000000000000000
+    Margins.Right = 10.000000000000000000
+    Size.Width = 620.000000000000000000
+    Size.Height = 316.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Viewport.Width = 616.000000000000000000
+    Viewport.Height = 312.000000000000000000
+  end
+  object btnSingle: TButton
+    Align = Bottom
+    Margins.Left = 10.000000000000000000
+    Margins.Right = 10.000000000000000000
+    Margins.Bottom = 10.000000000000000000
+    Position.X = 10.000000000000000000
+    Position.Y = 384.000000000000000000
+    Size.Width = 620.000000000000000000
+    Size.Height = 38.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 4
+    Text = 'Single'
+    OnClick = btnSingleClick
+  end
+  object btnNew: TButton
+    Align = Bottom
+    Margins.Left = 10.000000000000000000
+    Margins.Right = 10.000000000000000000
+    Margins.Bottom = 10.000000000000000000
+    Position.X = 10.000000000000000000
+    Position.Y = 432.000000000000000000
+    Size.Width = 620.000000000000000000
+    Size.Height = 38.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    Text = ' New'
+    OnClick = btnNewClick
+  end
+  object fdgxwtcrstTest: TFDGUIxWaitCursor
+    Provider = 'FMX'
+    Left = 456
+    Top = 328
+  end
+end
