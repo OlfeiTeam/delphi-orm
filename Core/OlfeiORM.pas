@@ -80,6 +80,7 @@ type
       function PackFloat(Value: string): string;
       function UnpackFloat(Value: string): string;
       function OlfeiBoolToStr(Fl: Boolean): Integer;
+      function OlfeiStrToBool(Fl: String): Boolean;
 
       function PrepareValue(ValueType, Value: string): string;
       function FormatValue(Index: Integer): string;
@@ -364,6 +365,14 @@ begin
     Result := 1
   else
     Result := 0;
+end;
+
+function TOlfeiCoreORM.OlfeiStrToBool(Fl: string): boolean;
+begin
+  Result := False;
+
+  if (AnsiLowerCase(Fl) = 'true') or (fl = '-1') then
+    Result := True;
 end;
 
 procedure TOlfeiCoreORM.Cache;
@@ -694,6 +703,9 @@ begin
 
   if (ValueType = 'real') or (ValueType = 'decimal') or (ValueType = 'single') then
     Result := PackFloat(Value);
+
+  if ValueType = 'boolean' then
+    Result := Self.OlfeiBoolToStr(Self.OlfeiStrToBool(Value)).ToString();
 
   if ValueType = 'string' then
     Result := DBConnection.Quoted(Value);
