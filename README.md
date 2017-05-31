@@ -171,7 +171,7 @@ $(PROJECTDIR)\SchemaGenerator migration="$(PROJECTDIR)\Classes\DataBase\Migratio
 
 	User.Delete;
 
-#Очистка таблицы
+# Очистка таблицы
 
 	Users.Truncate;
 
