@@ -1,123 +1,208 @@
 # delphi-orm
 
+Поддерживает работу с MySQL и SQLite
+
 Подкиньте в папку с проектом SchemaGenerator.exe. и в настройках проекта пропишите project-options-build events-prebuild events-command
 $(PROJECTDIR)\SchemaGenerator migration="$(PROJECTDIR)\Classes\DataBase\Migrations\" , где "$(PROJECTDIR)\Classes\DataBase\Migrations\" путь к файлам для миграций
 
-# Миграция
+# Типы данных
 
-unit migration_001_create_users_table;
+	procedure NewString(AName: string; ASize: integer = 255; ADefault: string = 'NULL');
+    procedure NewInteger(AName: string; ASize: integer = 11; ADefault: string = 'NULL');
+    procedure NewIntegerUnsigned(AName: string; ASize: integer = 11; ADefault: string = 'NULL');
+    procedure NewFloat(AName: string; ASize: integer = 16; ADecimalSize: integer = 2; ADefault: string = 'NULL');
+    procedure NewText(AName: string; ASize: integer = 65535; ADefault: string = 'NULL');
+    procedure NewBoolean(AName: string; ADefault: boolean = false);
+    procedure NewDateTime(AName: string; ADefault: string = 'NULL');
+    procedure NewDate(AName: string; ADefault: string = 'NULL');
+    procedure NewBlob(AName: string);
 
-interface
+    procedure NewTimestamps;
 
-uses
-  OlfeiSchema;
+# Пример миграции
 
-implementation
+	unit migration_001_create_users_table;
 
-begin
-  OlfeiTable := NewTable('users'); // название таблицы
+	interface
 
-  OlfeiTable.NewString('name'); 
-  OlfeiTable.NewString('password');
-  OlfeiTable.NewString('login');
-  OlfeiTable.NewTimestamps(); // created_at, update_at - как в ларавеле
+	uses
+	  OlfeiSchema;
 
-end.
+	implementation
 
-# Сид
+	begin
+	  OlfeiTable := NewTable('users');
 
-unit migration_002_add_user_seed;
+	  OlfeiTable.NewString('name'); 
+	  OlfeiTable.NewString('password');
+	  OlfeiTable.NewString('login');
+	  OlfeiTable.NewTimestamps(); // Создает поля created_at и update_at
 
-interface
+	end.
 
-uses
-  OlfeiSchema;
+# Пример сида
 
-implementation
+	unit migration_002_add_user_seed;
 
-begin
-  OlfeiSeed := OlfeiTable.Seed;
-  OlfeiSeed.Values['login'] := 'admin';
-  OlfeiSeed.Values['password'] := '123';
-  OlfeiSeed.Values['name'] := 'Администратор';
-end.
+	interface
 
-# Модель
+	uses
+	  OlfeiSchema;
 
-unit UserModel;
+	implementation
 
-interface
+	begin
+	  OlfeiSeed := OlfeiTable.Seed;
+	  
+	  OlfeiSeed.Values['login'] := 'admin';
+	  OlfeiSeed.Values['password'] := '123';
+	  OlfeiSeed.Values['name'] := 'Администратор';
+	end.
 
-uses
-  OlfeiSQL, OlfeiORM, ApplicationModel, OlfeiCollection;
+# Пример модели
 
-type
-  [TOlfeiTable('users')]
-  TUserModel = class(TOlfeiORM)
-    public
-      [TOlfeiField('login')]
-      property Login: String index 0 read GetString write SetString;
+	unit UserModel;
 
-      [TOlfeiField('password')]
-      property Password: String index 1 read GetString write SetString;
+	interface
 
-      [TOlfeiField('name')]
-      property Name: String index 2 read GetString write SetString;
-  end;
+	uses
+	  OlfeiSQL, OlfeiORM;
 
-  TUsersModels = class(TOlfeiCollection<TUserModel>)
-    public
-      constructor Create(FDB: TOlfeiDB); overload;
-  end;
+	type
+	  [TOlfeiTable('users')]
+	  TUserModel = class(TOlfeiORM)
+		public
+		  [TOlfeiField('login')]
+		  property Login: String index 0 read GetString write SetString;
 
-implementation
+		  [TOlfeiField('password')]
+		  property Password: String index 1 read GetString write SetString;
 
-constructor TUsersModels.Create(FDB: TOlfeiDB);
-begin
-  inherited Create(FDB, TUserModel);
-end;
+		  [TOlfeiField('name')]
+		  property Name: String index 2 read GetString write SetString;
+	  end;
 
-end.
+	implementation
 
+	end.
+	
+# Пример коллекции
+
+	unit UserModel;
+
+	interface
+
+	uses
+	  OlfeiSQL, OlfeiCollection, UserModel;
+
+	type
+	  TUsersModels = class(TOlfeiCollection<TUserModel>)
+		public
+		  constructor Create(FDB: TOlfeiDB); overload;
+	  end;
+
+	implementation
+
+	constructor TUsersModels.Create(FDB: TOlfeiDB);
+	begin
+	  inherited Create(FDB, TUserModel);
+	end;
+
+	end.
+
+# Пример модели со связанной коллекцией
+
+	[TOlfeiTable('users')]
+	TUserModel = class(TOlfeiORM)
+		private
+			function GetOlfeiImages(index: integer): TOlfeiCollection<TOlfeiImage>;
+			function GetOlfeiFriends(index: integer): TOlfeiCollection<TUserModel>;
+		public
+			[TOlfeiField('login')]
+			property Login: String index 0 read GetString write SetString;
+
+			[TOlfeiField('password')]
+			property Password: String index 1 read GetString write SetString;
+
+			[TOlfeiField('name')]
+			property Name: String index 2 read GetString write SetString;
+			
+			[TOlfeiCollectionField('id', 'user_id')]
+			property Images: TOlfeiCollection<TOlfeiImage> index 0 read GetOlfeiImages;
+
+			[TOlfeiPivotField('user_friend', 'user_id', 'friend_id')]
+			property Friends: TOlfeiCollection<TUserModel> index 1 read GetOlfeiFriends;
+		end;
+		
+	// Методы привязки
+	
+	function TUserModel.GetOlfeiImages(index: Integer): TOlfeiCollection<TOlfeiImage>;
+	begin
+	  Result := TOlfeiCollection<TOlfeiImage>(Self.GetForeignCollection(index, TOlfeiImage));
+	end;
+
+	function TUserModel.GetOlfeiFriends(index: Integer): TOlfeiCollection<TUserModel>;
+	begin
+	  Result := TOlfeiCollection<TUserModel>(Self.GetPivotCollection(index, TUserModel));
+	end;
+	
 # Работа с моделями и коллекциями
 
-    DB := initDB;// пример в коде найдёте
-    Users := TUsersModels.Create(Db); //коллекция юзеров
+    DB := InitDB; // Пример можно найти в Demo
+    Users := TUsersModels.Create(DB);
 
-    User := Users.Where('login', '=', Login).Where('password', '=', Pass).First;
+    User := Users.Where('login', Login).Where('password', Pass).First;
     Result := User.Exists;
+	
+	User.Images; // Коллекция связанных изображений
+	for Image in User.Images do
+		ShowMessage(Image.Path);
 
-    Users.Free;// оичщаем коллекцию( саму модель не нужно)
-    DB.Free;// после этого базу
+    Users.Free; // Очищаем коллекцию, все связанные модели очистит сборщик мусора
+    DB.Free;
 
-# циклы
+# Обход данных
 
-Users := TUsersModels.Create(Db);
-for User in Users.All do
-//
+	Users := TUsersModels.Create(DB);
+	for User in Users.All do
+		ShowMessage(User.Name);
 
 # Удаление записи
-User.Delete;
+
+	User.Delete;
 
 #Очистка таблицы
 
-Users.Truncate;
-
+	Users.Truncate;
 
 # Методы для коллекций
-.Where('field', 'value)  // '='  // выборка
-.where('field', '>', 'value')
-.where('field, 'in', DB.Raw('(1, 2, 3)'))
+	
+	.Where('field', 'value')
+	.Where('field', '=', 'value') // Тажке можно любое условие >, >=, <, <= и тд
+	.Where('field, 'IN', DB.Raw('(1, 2, 3)'))
+	.OrWhere('field', 'value')
+	.OrWhere('field', '=', 'value') // Тажке можно любое условие >, >=, <, <= и тд
+	.OrWhere('field, 'IN', DB.Raw('(1, 2, 3)'))
+	
+	.OrderBy('field', 'ASC') // Можно также указать как DESC
 
-.orderby('field', 'ASC/DESC') // сортировка
+	.StartGroup
+	.StartAndGroup
+	.StartOrGroup
+	.EndGroup
+	
+	.Join('table', 'remote_key', 'local_key')
+	.WhereFor('table', 'field', '=', 'value') // Тажке можно любое условие >, >=, <, <= и тд
+	.OrWhereFor('table', 'field', '=', 'value') // Тажке можно любое условие >, >=, <, <= и тд
+	.OrderByFor('table', 'field', 'ASC') // Можно также указать как DESC
+	
+	.Limit('offset', 'limit')
+	.Count
+	.Sum('field')
+	.All
+	.First
 
-.limit('offset', 'limit') // лимит
-.count // количество
-.sum('field')// cумма
-.all // все записи
-
-
-список будет пополнятся
+Продолжение следует...
 
 
 
