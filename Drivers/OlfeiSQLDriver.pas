@@ -14,6 +14,7 @@ type
     function FieldTypeToSQL(AType: Word; ASize, ADecimalSize: integer): string; virtual; abstract;
     procedure NewTable(OlfeiTable: TObject); virtual; abstract;
     procedure UpdateTable(OlfeiTable: TObject); virtual; abstract;
+    procedure DropTable(OlfeiTable: TObject); virtual; abstract;
     procedure Init(Parameters: TStringList); virtual; abstract;
 
     function PrepareDefault(ADefault: string): String;

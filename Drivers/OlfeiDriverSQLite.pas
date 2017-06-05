@@ -13,6 +13,7 @@ type
     function CheckTable(TableName: string): Boolean; override;
     procedure NewTable(OlfeiTable: TObject); override;
     procedure UpdateTable(OlfeiTable: TObject); override;
+    procedure DropTable(OlfeiTable: TObject); override;
     function FieldTypeToSQL(AType: Word; ASize, ADecimalSize: integer): string; override;
 
     procedure ConfirmUpdate(OlfeiTable: TObject);
@@ -170,6 +171,11 @@ begin
   end;
 
   ConfirmUpdate(OlfeiTable);
+end;
+
+procedure TOlfeiDriverSQLite.DropTable(OlfeiTable: TObject);
+begin
+  OlfeiDB.RunSQL('DROP TABLE ' + OlfeiDB.Quote + (OlfeiTable as TOlfeiTableSchema).Table + OlfeiDB.Quote);
 end;
 
 procedure TOlfeiDriverSQLite.UpdateTable(OlfeiTable: TObject);
