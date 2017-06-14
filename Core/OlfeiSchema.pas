@@ -39,6 +39,7 @@ type
   TOlfeiTableSchema = class
   private
     IsNew: boolean;
+    IsDrop: boolean;
     FNewFields: TOlfeiTableFields;
     FUpdateFields: TOlfeiTableFields;
     FDropFields: TOlfeiTableFields;
@@ -101,7 +102,7 @@ type
 
     function Seed(AName: string = ''): TStringList;
 
-    constructor Create(ATable: string; New: boolean = false); overload;
+    constructor Create(ATable: string; New: boolean = false; Drop: boolean = false); overload;
     destructor Destroy; override;
   end;
 
@@ -159,16 +160,25 @@ begin
   Result := OlfeiTables[Length(OlfeiTables) - 1];
 end;
 
+function DropTable(ATable: string): TOlfeiTableSchema;
+begin
+  SetLength(OlfeiTables, Length(OlfeiTables) + 1);
+  OlfeiTables[Length(OlfeiTables) - 1] := TOlfeiTableSchema.Create(ATable, False, True);
+
+  Result := OlfeiTables[Length(OlfeiTables) - 1];
+end;
+
 constructor TOlfeiSchema.Create(ADriver: TOlfeiSQLDriver);
 begin
   Driver := ADriver;
 end;
 
-constructor TOlfeiTableSchema.Create(ATable: string; New: Boolean = False);
+constructor TOlfeiTableSchema.Create(ATable: string; New: Boolean = False; Drop: Boolean = false);
 begin
   Self.IsNew := New;
   Self.FTableName := ATable;
   Self.Pivot := false;
+  Self.IsDrop := Drop;
 
   if Self.IsNew then
     Self.FMigrationName := 'create_table_' + AnsiLowerCase(ATable)
@@ -244,6 +254,8 @@ begin
     if not Self.Driver.IsMigrate(OlfeiTables[i].Migration) then
       if OlfeiTables[i].IsNew then
         Self.Driver.NewTable(OlfeiTables[i])
+      else if OlfeiTables[i].IsDrop then
+        Self.Driver.DropTable(OlfeiTables[i])
       else
         Self.Driver.UpdateTable(OlfeiTables[i]);
 
