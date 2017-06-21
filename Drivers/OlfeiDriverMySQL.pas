@@ -62,7 +62,7 @@ begin
     Result := ' DATE';
 
   if AType = TOlfeiFieldTypeBlob then
-    Result := ' BLOB';
+    Result := ' LONGBLOB';
 end;
 
 function TOlfeiDriverMySQL.CheckTable(TableName: string): Boolean;
