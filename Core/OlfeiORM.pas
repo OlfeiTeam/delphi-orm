@@ -438,10 +438,14 @@ var
 begin
   for i := 0 to Length(Self.Fields) - 1 do
     if Fields[i].Name = Self.SLValues.Names[Index] then
-      if (AnsiLowerCase(Fields[i].ItemType) = 'tdatetime') or (AnsiLowerCase(Fields[i].ItemType) = 'tdate') then
+    begin
+      if AnsiLowerCase(Fields[i].ItemType) = 'tdatetime' then
         Exit(FormatDateTime('yyyy-mm-dd hh:nn:ss', StrToDateTime(Self.SLValues.ValueFromIndex[Index])))
+      else if AnsiLowerCase(Fields[i].ItemType) = 'tdate' then
+        Exit(FormatDateTime('yyyy-mm-dd', StrToDate(Self.SLValues.ValueFromIndex[Index])))
       else
         Exit(Self.SLValues.ValueFromIndex[Index]);
+    end;
 end;
 
 procedure TOlfeiCoreORM.Save;
