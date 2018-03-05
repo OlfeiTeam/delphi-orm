@@ -123,6 +123,8 @@ begin
   SQLConnection.FetchOptions.AutoClose := True;
   SQLConnection.TxOptions.AutoCommit := True;
 
+  SQLConnection.ResourceOptions.SilentMode := True;
+
   CriticalSection := TCriticalSection.Create;
 
   Parameters := TStringList.Create;
