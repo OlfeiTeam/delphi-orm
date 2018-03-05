@@ -34,6 +34,8 @@ begin
   inherited;
 
   Self.ConnectionManager := TFDManager.Create(nil);
+  Self.ConnectionManager.SilentMode := True;
+
   Self.ConnectionManager.Active := True;
 
   CountConnection := TStringList.Create;

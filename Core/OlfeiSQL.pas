@@ -149,8 +149,20 @@ end;
 
 procedure TOlfeiDB.Connect;
 begin
-  Driver := Parameters.Values['driver'];
+  if IsPool then
+  begin
+    if Pos(AnsiUpperCase('MySQL'), AnsiUpperCase(SQLConnection.ConnectionDefName)) > 0 then
+      Driver := 'mysql';
 
+    if Pos(AnsiUpperCase('SQLite'), AnsiUpperCase(SQLConnection.ConnectionDefName)) > 0 then
+      Driver := 'sqlite';
+  end
+  else
+    Driver := Parameters.Values['driver'];
+
+  if Driver = '' then
+    raise Exception.Create('ORM support only SQLite and MySQL (MariaDB)');
+  
   if Driver = 'sqlite' then
   begin
     DriverConnect := TOlfeiDriverSQLite.Create(Self);
