@@ -18,7 +18,8 @@ uses
   migration_007_drop_index_on_users_table in 'Migrations\migration_007_drop_index_on_users_table.pas',
   migration_008_drop_foreign_on_test_table in 'Migrations\migration_008_drop_foreign_on_test_table.pas',
   migration_009_add_avatar_to_users_table in 'Migrations\migration_009_add_avatar_to_users_table.pas',
-  migration_010_create_pivot_user_friend_table in 'Migrations\migration_010_create_pivot_user_friend_table.pas';
+  migration_010_create_pivot_user_friend_table in 'Migrations\migration_010_create_pivot_user_friend_table.pas',
+  OlfeiPool in '..\Core\OlfeiPool.pas';
 
 {$R *.res}
 

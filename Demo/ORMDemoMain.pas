@@ -34,21 +34,28 @@ implementation
 
 uses
   OlfeiSQL, OlfeiUser, OlfeiUsers, OlfeiTest,
-    OlfeiORM, OlfeiCollection, OlfeiImage;
+    OlfeiORM, OlfeiCollection, OlfeiImage, OlfeiPool;
 
 procedure TfrmMain.btnNewClick(Sender: TObject);
 var
+  OlfeiPool: TOlfeiPool;
   OlfeiDB: TOlfeiDB;
   OlfeiUser, OlfeiFriend: TOlfeiUser;
   OlfeiImage: TOlfeiImage;
-begin
-  OlfeiDB := TOlfeiDB.Create;
 
-  OlfeiDB.Parameters.Values['driver'] := 'mysql';
-  OlfeiDB.Parameters.Values['host'] := '192.168.1.6';
-  OlfeiDB.Parameters.Values['database'] := 'test';
-  OlfeiDB.Parameters.Values['user'] := 'hrc';
-  OlfeiDB.Parameters.Values['password'] := 'hrc.lan';
+  Parameters: TStringList;
+begin
+  Parameters := TStringList.Create;
+
+  Parameters.Values['driver'] := 'mysql';
+  Parameters.Values['host'] := '192.168.1.6';
+  Parameters.Values['database'] := 'test';
+  Parameters.Values['user'] := 'hrc';
+  Parameters.Values['password'] := 'hrc.lan';
+
+  OlfeiPool := TOlfeiPool.Create;
+
+  OlfeiDB := TOlfeiDB.Create(OlfeiPool.AddConnection('MySQL', Parameters).name);
 
   //OlfeiDB.Parameters.Values['driver'] := 'sqlite';
   //OlfeiDB.Parameters.Values['database'] := './test.sqlite';
@@ -62,9 +69,6 @@ begin
 
   OlfeiUser.Save;
 
-  mmoTest.Lines.Add(OlfeiUser.Avatar.DataString);
-  mmoTest.Lines.Add(OlfeiUser.Avatar.DataString);
-  mmoTest.Lines.Add(OlfeiUser.Avatar.DataString);
   mmoTest.Lines.Add(OlfeiUser.Avatar.DataString);
 
   for OlfeiImage in OlfeiUser.Images.All do

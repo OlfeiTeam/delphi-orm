@@ -29,10 +29,6 @@ type
     flLoaded, flAutoMigrate: Boolean;
     DriverConnect: TObject;
 
-    {$IFDEF MSWINDOWS}
-      FDPhysMySQLDriverLink: TFDPhysMySQLDriverLink;
-    {$ENDIF}
-
     function IsRaw(val: string): boolean;
     function ClearRaw(val: string): string;
   public
@@ -40,8 +36,10 @@ type
     SQLConnection: TFDConnection;
     Quote: string;
     Driver: string;
+    IsPool: boolean;
 
     constructor Create(AutoMigrate: boolean = True); overload;
+    constructor Create(ConnectionName: string; AutoMigrate: Boolean = True); overload;
     destructor Destroy; override;
     function GetSQL(SQL: string): TFDMemTable;
     function GetOnce(SQL, ValueType: string): string;
@@ -72,10 +70,6 @@ begin
   CriticalSection.Free;
 
   Parameters.Free;
-
-  {$IFDEF MSWINDOWS}
-    FDPhysMySQLDriverLink.Free;
-  {$ENDIF}
 
   inherited;
 end;
@@ -113,8 +107,31 @@ begin
   Result := Pos('RAWDATA', val) > 0;
 end;
 
+constructor TOlfeiDB.Create(ConnectionName: string; AutoMigrate: Boolean = true);
+begin
+  IsPool := True;
+
+  flLoaded := true;
+  flAutoMigrate := AutoMigrate;
+
+  SQLConnection := TFDConnection.Create(nil);
+
+  SQLConnection.ConnectionDefName := ConnectionName;
+
+  SQLConnection.FetchOptions.Mode := fmAll;
+  SQLConnection.FetchOptions.RowsetSize := 300;
+  SQLConnection.FetchOptions.AutoClose := True;
+  SQLConnection.TxOptions.AutoCommit := True;
+
+  CriticalSection := TCriticalSection.Create;
+
+  Parameters := TStringList.Create;
+end;
+
 constructor TOlfeiDB.Create(AutoMigrate: boolean = True);
 begin
+  IsPool := false;
+
   flLoaded := true;
   flAutoMigrate := AutoMigrate;
 
@@ -126,10 +143,6 @@ begin
   SQLConnection.TxOptions.AutoCommit := True;
 
   CriticalSection := TCriticalSection.Create;
-
-  {$IFDEF MSWINDOWS}
-    FDPhysMySQLDriverLink := TFDPhysMySQLDriverLink.Create(nil);
-  {$ENDIF}
 
   Parameters := TStringList.Create;
 end;
