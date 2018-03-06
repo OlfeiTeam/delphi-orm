@@ -69,6 +69,7 @@ type
       function Sum(Field: string): Real;
       function Min(Field: string): Real;
       function Max(Field: string): Real;
+      function Avg(Field: string): Real;
 
       procedure Truncate;
       procedure Delete;
@@ -424,6 +425,13 @@ end;
 function TOlfeiCollection<T>.Sum(Field: string): real;
 begin
   Result := FDB.GetOnce('SELECT ' + DistinctString + ' SUM(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
+
+  QueryString := '';
+end;
+
+function TOlfeiCollection<T>.Avg(Field: string): real;
+begin
+  Result := FDB.GetOnce('SELECT ' + DistinctString + ' AVG(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
 
   QueryString := '';
 end;
