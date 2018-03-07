@@ -380,7 +380,7 @@ var
 begin
   DS := FDB.GetSQL(Self.GetResultQuery + ' LIMIT 1');
 
-  Self.Clear;
+  //Self.Clear;
 
   RttiContext := TRttiContext.Create;
   RttiType := RttiContext.GetType(FParentClass);
