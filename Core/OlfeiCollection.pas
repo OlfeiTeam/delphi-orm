@@ -39,6 +39,7 @@ type
       FRemoteKey, FRemoteTable, FLocalKey: string;
 
       procedure Clear;
+      procedure ClearOld;
     protected
       Elements: TOlfeiResultArray<T>;
       Iterator: TOlfeiCollectionResult<T>;
@@ -145,12 +146,7 @@ begin
 
   RttiContext.Free;
 
-  QueryString := '';
-  OrderString := '';
-  LimitString := '';
-  DistinctString := '';
-
-  IsPreInput := False;
+  Self.ClearOld;
 
   Iterator := TOlfeiCollectionResult<T>.Create;
 end;
@@ -351,9 +347,7 @@ begin
     DS.Next;
   end;
 
-  QueryString := '';
-  OrderString := '';
-  LimitString := '';
+  Self.ClearOld;
 
   DS.Free;
 
@@ -404,13 +398,11 @@ begin
   SetLength(Elements, Length(Elements) + 1);
   Elements[Length(Elements) - 1] := T(RttiValue.AsObject);
 
-  Result := Elements[0];
+  Result := Elements[Length(Elements) - 1];
 
   RttiContext.Free;
 
-  QueryString := '';
-  OrderString := '';
-  LimitString := '';
+  Self.ClearOld;
 
   DS.Free;
 end;
@@ -419,35 +411,35 @@ function TOlfeiCollection<T>.Count: Integer;
 begin
   Result := FDB.GetOnce('SELECT ' + DistinctString + ' COUNT(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + 'id' + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToInteger();
 
-  QueryString := '';
+  Self.ClearOld;
 end;
 
 function TOlfeiCollection<T>.Sum(Field: string): real;
 begin
   Result := FDB.GetOnce('SELECT ' + DistinctString + ' SUM(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
 
-  QueryString := '';
+  Self.ClearOld;
 end;
 
 function TOlfeiCollection<T>.Avg(Field: string): real;
 begin
   Result := FDB.GetOnce('SELECT ' + DistinctString + ' AVG(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
 
-  QueryString := '';
+  Self.ClearOld;
 end;
 
 function TOlfeiCollection<T>.Max(Field: string): real;
 begin
   Result := FDB.GetOnce('SELECT ' + DistinctString + ' MAX(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
 
-  QueryString := '';
+  Self.ClearOld;
 end;
 
 function TOlfeiCollection<T>.Min(Field: string): real;
 begin
   Result := FDB.GetOnce('SELECT ' + DistinctString + ' MIN(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
 
-  QueryString := '';
+  Self.ClearOld;
 end;
 
 function TOlfeiCollection<T>.Join(Table, FieldJoin, FieldJoinWith: string): TOlfeiCollection<T>;
@@ -469,6 +461,16 @@ begin
 
   if FDB.Driver = 'mysql' then
     FDB.RunSQL('ALTER TABLE' + FDB.Quote + FTable + FDB.Quote + ' '+ 'AUTO_INCREMENT = 1');
+end;
+
+procedure TOlfeiCollection<T>.ClearOld;
+begin
+  QueryString := '';
+  OrderString := '';
+  LimitString := '';
+  DistinctString := '';
+
+  IsPreInput := False;
 end;
 
 procedure TOlfeiCollection<T>.Clear;
