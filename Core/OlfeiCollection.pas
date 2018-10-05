@@ -83,7 +83,7 @@ type
       destructor Destroy; override;
 
       function All: TOlfeiCollectionResult<T>;
-      function First: T;
+      function First(LockBeforeUpdate: boolean = false): T;
       function ToJSON: TJSONArray;
   end;
 
@@ -481,7 +481,7 @@ begin
   FDB.RunSQL(SQL);
 end;
 
-function TOlfeiCollection<T>.First: T;
+function TOlfeiCollection<T>.First(LockBeforeUpdate: Boolean = false): T;
 var
   DS: TFDMemTable;
 
@@ -490,7 +490,10 @@ var
   RttiValue: TValue;
   RttiParameters: TArray<TValue>;
 begin
-  DS := FDB.GetSQL(Self.GetResultQuery + ' LIMIT 1');
+  if (LockBeforeUpdate) and (FDB.Driver = 'mysql') then
+    DS := FDB.GetSQL(Self.GetResultQuery + ' LIMIT 1 FOR UPDATE')
+  else
+    DS := FDB.GetSQL(Self.GetResultQuery + ' LIMIT 1');
 
   Self.Clear;
 
