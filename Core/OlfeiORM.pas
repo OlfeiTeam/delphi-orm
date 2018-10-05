@@ -91,8 +91,8 @@ type
       ID: integer;
       Table: string;
 
-      constructor Create(FDB: TOlfeiDB; FID: integer = 0); overload;
-      constructor Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: integer = 0); overload;
+      constructor Create(FDB: TOlfeiDB; FID: integer = 0; WithCache: boolean = true); overload;
+      constructor Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: integer = 0; WithCache: Boolean = true); overload;
 
       destructor Destroy; override;
 
@@ -100,7 +100,7 @@ type
       procedure Delete;
       procedure Save;
       procedure Find(FID: Integer);
-      procedure Cache;
+      procedure Cache(LockBeforeUpdate: Boolean = false);
       procedure Attach(AObject: TOlfeiCoreORM; AID: integer);
       function ToJSON: TJSONObject;
 
@@ -146,8 +146,8 @@ type
       property Created: TDateTime read GetCreated;
       property Updated: TDateTime read GetUpdated;
 
-      constructor Create(FDB: TOlfeiDB; FID: integer = 0); overload;
-      constructor Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: integer = 0); overload;
+      constructor Create(FDB: TOlfeiDB; FID: integer = 0; WithCache: boolean = true); overload;
+      constructor Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: integer = 0; WithCache: boolean = true); overload;
   end;
 
 implementation
@@ -189,7 +189,7 @@ begin
   FRemoteKey := ARemoteKey;
 end;
 
-constructor TOlfeiORM.Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: Integer = 0);
+constructor TOlfeiORM.Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: Integer = 0; WithCache: boolean = true);
 var
   Query: string;
   DS: TFDMemTable;
@@ -207,12 +207,12 @@ begin
   DS.Free;
 end;
 
-constructor TOlfeiORM.Create(FDB: TOlfeiDB; FID: Integer = 0);
+constructor TOlfeiORM.Create(FDB: TOlfeiDB; FID: Integer = 0; WithCache: boolean = true);
 var
   Query: string;
   DS: TFDMemTable;
 begin
-  inherited Create(FDB, FID);
+  inherited Create(FDB, FID, WithCache);
 
   UseTimestamps := true;
 
@@ -225,7 +225,7 @@ begin
   DS.Free;
 end;
 
-constructor TOlfeiCoreORM.Create(FDB: TOlfeiDB; FID: Integer = 0);
+constructor TOlfeiCoreORM.Create(FDB: TOlfeiDB; FID: Integer = 0; WithCache: boolean = true);
 var
   RttiCtx: TRttiContext;
   RttiType: TRttiType;
@@ -318,11 +318,13 @@ begin
   if Isset(FID) then
   begin
     ID := FID;
-    Cache;
+
+    if WithCache then
+      Cache;
   end;
 end;
 
-constructor TOlfeiCoreORM.Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: Integer = 0);
+constructor TOlfeiCoreORM.Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: Integer = 0; WithCache: boolean = true);
 var
   RttiCtx: TRttiContext;
   RttiType: TRttiType;
@@ -550,7 +552,7 @@ begin
   Result := FJSONObject;
 end;
 
-procedure TOlfeiCoreORM.Cache;
+procedure TOlfeiCoreORM.Cache(LockBeforeUpdate: boolean = false);
 var
   DS: TFDMemTable;
   i: integer;
@@ -571,7 +573,10 @@ begin
     begin
       SetLength(Query, Length(Query) - 1);
 
-      DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString());
+      if (LockBeforeUpdate) and (DBConnection.Driver = 'mysql') then
+        DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString() + ' FOR UPDATE')
+      else
+        DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString());
 
       for i := 0 to Length(Fields) - 1 do
         if Fields[i].Name <> '' then
@@ -596,7 +601,10 @@ begin
     begin
       SetLength(Query, Length(Query) - 1);
 
-      DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString());
+      if (LockBeforeUpdate) and (DBConnection.Driver = 'mysql') then
+        DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString() + ' FOR UPDATE')
+      else
+        DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString());
 
       for i := 0 to Length(ForeignFields) - 1 do
         if ForeignFields[i].FLocalKey <> '' then

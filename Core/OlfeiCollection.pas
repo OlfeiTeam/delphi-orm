@@ -82,9 +82,9 @@ type
       constructor Create(ADB: TOlfeiDB; AParentClass: TClass; Pivot: boolean = false); overload;
       destructor Destroy; override;
 
-      function All: TOlfeiCollectionResult<T>;
-      function First(LockBeforeUpdate: boolean = false): T;
-      function ToJSON: TJSONArray;
+      function All(WithCache: Boolean = True): TOlfeiCollectionResult<T>;
+      function First(LockBeforeUpdate: boolean = false; WithCache: Boolean = True): T;
+      function ToJSON(WithCache: Boolean = True): TJSONArray;
   end;
 
 implementation
@@ -380,7 +380,7 @@ begin
       ' ' + QueryString + OrderString + LimitString;
 end;
 
-function TOlfeiCollection<T>.All: TOlfeiCollectionResult<T>;
+function TOlfeiCollection<T>.All(WithCache: boolean = True): TOlfeiCollectionResult<T>;
 var
   DS: TFDMemTable;
 
@@ -402,6 +402,7 @@ begin
     RttiParameters[0] := TValue.From<TOlfeiDB>(FDB);
     RttiParameters[1] := TValue.From<TOlfeiFilterFields>(FFilterFields);
     RttiParameters[2] := TValue.From<Integer>(DS.FieldByName('id').AsInteger);
+    RttiParameters[3] := TValue.From<Boolean>(WithCache);
 
     RttiValue := RttiMethodInvokeEx('Create', RttiType, RttiType.AsInstance.MetaclassType, RttiParameters);
 
@@ -423,7 +424,7 @@ begin
   Result := Iterator;
 end;
 
-function TOlfeiCollection<T>.ToJSON: TJSONArray;
+function TOlfeiCollection<T>.ToJSON(WithCache: boolean = true): TJSONArray;
 var
   DS: TFDMemTable;
 
@@ -444,6 +445,7 @@ begin
     RttiParameters[0] := TValue.From<TOlfeiDB>(FDB);
     RttiParameters[1] := TValue.From<TOlfeiFilterFields>(FFilterFields);
     RttiParameters[2] := TValue.From<Integer>(DS.FieldByName('id').AsInteger);
+    RttiParameters[3] := TValue.From<Boolean>(WithCache);
 
     RttiValue := RttiMethodInvokeEx('Create', RttiType, RttiType.AsInstance.MetaclassType, RttiParameters);
 
@@ -481,7 +483,7 @@ begin
   FDB.RunSQL(SQL);
 end;
 
-function TOlfeiCollection<T>.First(LockBeforeUpdate: Boolean = false): T;
+function TOlfeiCollection<T>.First(LockBeforeUpdate: Boolean = false; WithCache: boolean = true): T;
 var
   DS: TFDMemTable;
 
@@ -508,6 +510,8 @@ begin
     RttiParameters[2] := TValue.From<Integer>(DS.FieldByName('id').AsInteger)
   else
     RttiParameters[2] := 0;
+
+  RttiParameters[3] := TValue.From<Boolean>(WithCache);
 
   RttiValue := RttiMethodInvokeEx('Create', RttiType, RttiType.AsInstance.MetaclassType, RttiParameters);
 
