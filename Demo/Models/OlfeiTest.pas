@@ -14,10 +14,10 @@ type
       [TOlfeiField('name')]
       property Name: String index 0 read GetString write SetString;
 
-      [TOlfeiField('year')]
+      [TOlfeiField('years')]
       property Years: Integer index 1 read GetInteger write SetInteger;
 
-      [TOlfeiField('user_id')]
+      [TOlfeiForeignField('user_id', 'id')]
       property User: TOlfeiUser index 2 read GetOlfeiUser;
   end;
 

@@ -3,9 +3,11 @@ unit OlfeiORM;
 interface
 
 uses OlfeiSQL, System.SysUtils, System.Classes, FireDac.Comp.Client,
-  System.DateUtils, System.Rtti, System.UITypes;
+  System.DateUtils, System.Rtti, System.UITypes, System.JSON;
 
 type
+  TOlfeiFilterFields = array of string;
+
   TOlfeiPivotItem = record
     FTable, FLocalKey, FRemoteKey: string;
   end;
@@ -74,7 +76,7 @@ type
   TOlfeiCoreORM = class
     private
       SLValues: TStringList;
-      BlobValues, OlfeiCollections: array of TObject;
+      BlobValues, OlfeiCollections, OlfeiForeigns: array of TObject;
       FFieldName: string;
 
       function PackFloat(Value: string): string;
@@ -83,12 +85,15 @@ type
       function OlfeiStrToBool(Fl: String): Boolean;
 
       function PrepareValue(ValueType, Value: string): string;
-      function FormatValue(Index: Integer): string;
+      //function FormatValue(Index: Integer): string;
+      function FormatValueByField(Index: Integer): string;
     public
       ID: integer;
       Table: string;
 
-      constructor Create(FDB: TOlfeiDB; FID: integer = 0);
+      constructor Create(FDB: TOlfeiDB; FID: integer = 0); overload;
+      constructor Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: integer = 0); overload;
+
       destructor Destroy; override;
 
       function Exists: Boolean;
@@ -97,6 +102,7 @@ type
       procedure Find(FID: Integer);
       procedure Cache;
       procedure Attach(AObject: TOlfeiCoreORM; AID: integer);
+      function ToJSON: TJSONObject;
 
       property FieldName: string read FFieldName write FFieldName;
     protected
@@ -105,6 +111,7 @@ type
       ForeignFields: TOlfeiForeignItems;
       DBConnection: TOlfeiDB;
       UseTimestamps: boolean;
+      FJSONObject: TJSONObject;
 
       function GetColor(index: Integer): TAlphaColor;
       procedure SetColor(Index: integer; Value: TAlphaColor);
@@ -140,6 +147,7 @@ type
       property Updated: TDateTime read GetUpdated;
 
       constructor Create(FDB: TOlfeiDB; FID: integer = 0); overload;
+      constructor Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: integer = 0); overload;
   end;
 
 implementation
@@ -181,6 +189,24 @@ begin
   FRemoteKey := ARemoteKey;
 end;
 
+constructor TOlfeiORM.Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: Integer = 0);
+var
+  Query: string;
+  DS: TFDMemTable;
+begin
+  inherited Create(FDB, FFilterFields, FID);
+
+  UseTimestamps := true;
+
+  Query := Query + DBConnection.Quote + 'created_at' + DBConnection.Quote + ',' + DBConnection.Quote + 'updated_at' + DBConnection.Quote;
+  DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString());
+
+  SLValues.Values['created_at'] := PrepareValue('tdatetime', DS.FieldByName('created_at').AsString);
+  SLValues.Values['updated_at'] := PrepareValue('tdatetime', DS.FieldByName('updated_at').AsString);
+
+  DS.Free;
+end;
+
 constructor TOlfeiORM.Create(FDB: TOlfeiDB; FID: Integer = 0);
 var
   Query: string;
@@ -190,19 +216,11 @@ begin
 
   UseTimestamps := true;
 
-  if Isset(ID) then
-  begin
-    Query := Query + DBConnection.Quote + 'created_at' + DBConnection.Quote + ',' + DBConnection.Quote + 'updated_at' + DBConnection.Quote;
-    DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString());
+  Query := Query + DBConnection.Quote + 'created_at' + DBConnection.Quote + ',' + DBConnection.Quote + 'updated_at' + DBConnection.Quote;
+  DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString());
 
-    SLValues.Values['created_at'] := PrepareValue('tdatetime', DS.FieldByName('created_at').AsString);
-    SLValues.Values['updated_at'] := PrepareValue('tdatetime', DS.FieldByName('updated_at').AsString);
-  end
-  else
-  begin
-    SLValues.Values['created_at'] := PrepareValue('tdatetime', '0000-00-00 00:00:00');
-    SLValues.Values['updated_at'] := PrepareValue('tdatetime', '0000-00-00 00:00:00');
-  end;
+  SLValues.Values['created_at'] := PrepareValue('tdatetime', DS.FieldByName('created_at').AsString);
+  SLValues.Values['updated_at'] := PrepareValue('tdatetime', DS.FieldByName('updated_at').AsString);
 
   DS.Free;
 end;
@@ -214,6 +232,8 @@ var
   RttiProp: TRttiProperty;
   RttiAttr: TCustomAttribute;
 begin
+  FJSONObject := TJSONObject.Create;
+
   RttiCtx := TRttiContext.Create;
   RttiType := RttiCtx.GetType(Self.ClassType);
 
@@ -302,10 +322,130 @@ begin
   end;
 end;
 
+constructor TOlfeiCoreORM.Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: Integer = 0);
+var
+  RttiCtx: TRttiContext;
+  RttiType: TRttiType;
+  RttiProp: TRttiProperty;
+  RttiAttr: TCustomAttribute;
+
+  function CheckField(FField: string): boolean;
+  var
+    i: Integer;
+  begin
+    if Length(FFilterFields) = 0 then
+      Exit(True);
+
+    Result := false;
+    for i := 0 to Length(FFilterFields) - 1 do
+      if FField = FFilterFields[i] then
+        Result := True;
+  end;
+
+begin
+  FJSONObject := TJSONObject.Create;
+
+  RttiCtx := TRttiContext.Create;
+  RttiType := RttiCtx.GetType(Self.ClassType);
+
+  for RttiAttr in RttiType.GetAttributes do
+    if RttiAttr is TOlfeiTable then
+      Table := TOlfeiTable(RttiAttr).Name;
+
+  for RttiProp in RttiType.GetProperties do
+    for RttiAttr in RttiProp.GetAttributes do
+    begin
+      if RttiAttr is TOlfeiField then
+      begin
+        if not CheckField(TOlfeiField(RttiAttr).Name) then
+          Continue;
+
+        if Length(Fields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(Fields, (RttiProp as TRttiInstanceProperty).Index + 1);
+
+        if Fields[(RttiProp as TRttiInstanceProperty).Index].Name <> '' then
+          raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for column ' + TOlfeiField(RttiAttr).Name);
+
+        Fields[(RttiProp as TRttiInstanceProperty).Index].Name := TOlfeiField(RttiAttr).Name;
+        Fields[(RttiProp as TRttiInstanceProperty).Index].ItemType := (RttiProp as TRttiInstanceProperty).PropertyType.ToString;
+      end;
+
+      if RttiAttr is TOlfeiCollectionField then
+      begin
+        if Length(CollectionFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(CollectionFields, (RttiProp as TRttiInstanceProperty).Index + 1);
+
+        if (CollectionFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or (CollectionFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+          raise Exception.Create('Dupplicate index for ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for collection ' + TOlfeiCollectionField(RttiAttr).LocalKey);
+
+        CollectionFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiCollectionField(RttiAttr).LocalKey;
+        CollectionFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey := TOlfeiCollectionField(RttiAttr).RemoteKey;
+      end;
+
+      if RttiAttr is TOlfeiBlobField then
+      begin
+        if not CheckField(TOlfeiBlobField(RttiAttr).Name) then
+          Continue;
+
+        if Length(BlobFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(BlobFields, (RttiProp as TRttiInstanceProperty).Index + 1);
+
+        if BlobFields[(RttiProp as TRttiInstanceProperty).Index].Name <> '' then
+          raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for column ' + TOlfeiBlobField(RttiAttr).Name);
+
+        BlobFields[(RttiProp as TRttiInstanceProperty).Index].Name := TOlfeiBlobField(RttiAttr).Name;
+      end;
+
+      if RttiAttr is TOlfeiPivotField then
+      begin
+        if Length(PivotFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(PivotFields, (RttiProp as TRttiInstanceProperty).Index + 1);
+
+        if (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable <> '') or
+          (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or
+          (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+          raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for pivot ' + TOlfeiPivotField(RttiAttr).LocalKey);
+
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable := TOlfeiPivotField(RttiAttr).Table;
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiPivotField(RttiAttr).LocalKey;
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey := TOlfeiPivotField(RttiAttr).RemoteKey;
+      end;
+
+      if RttiAttr is TOlfeiForeignField then
+      begin
+        if Length(ForeignFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(ForeignFields, (RttiProp as TRttiInstanceProperty).Index + 1);
+
+        if (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or
+          (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+          raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for foreign ' + TOlfeiForeignField(RttiAttr).LocalKey);
+
+        ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiForeignField(RttiAttr).LocalKey;
+        ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey := TOlfeiForeignField(RttiAttr).RemoteKey;
+      end;
+    end;
+
+  RttiCtx.Free;
+
+  UseTimestamps := false;
+  DBConnection := FDB;
+
+  SLValues := TStringList.Create;
+
+  if Isset(FID) then
+  begin
+    ID := FID;
+    Cache;
+  end;
+end;
+
 destructor TOlfeiCoreORM.Destroy;
 var
   i: integer;
 begin
+   if Assigned(FJSONObject) then
+    FJSONObject.Free;
+
   SLValues.Free;
 
   for i := Length(BlobValues) - 1 downto 0 do
@@ -315,6 +455,10 @@ begin
   for i := Length(OlfeiCollections) - 1 downto 0 do
     if Assigned(OlfeiCollections[i]) then
       OlfeiCollections[i].Free;
+
+  for i := Length(OlfeiForeigns) - 1 downto 0 do
+    if Assigned(OlfeiForeigns[i]) then
+      OlfeiForeigns[i].Free;
 
   inherited;
 end;
@@ -339,7 +483,7 @@ end;
 
 function TOlfeiCoreORM.Isset(FID: Integer): boolean;
 begin
-  Result := DBConnection.GetOnce('SELECT COUNT(' + DBConnection.Quote + 'id' + DBConnection.Quote + ') as mc FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + FID.ToString(), 'integer') <> '0';
+  Result := DBConnection.GetOnce('SELECT ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + FID.ToString() + ' LIMIT 1', 'integer') <> '0';
 end;
 
 function TOlfeiORM.GetCreated: TDateTime;
@@ -379,8 +523,31 @@ function TOlfeiCoreORM.OlfeiStrToBool(Fl: string): boolean;
 begin
   Result := False;
 
-  if (AnsiLowerCase(Fl) = 'true') or (fl = '-1') then
+  if (AnsiLowerCase(Fl) = 'true') or (fl = '-1') or (fl = '1') then
     Result := True;
+end;
+
+function TOlfeiCoreORM.ToJSON: TJSONObject;
+var
+  i: integer;
+begin
+  for i := 0 to Length(Fields) - 1 do
+    FJSONObject.AddPair(Fields[i].Name, SLValues.Values[Fields[i].Name]);
+
+  if UseTimestamps then
+  begin
+    if SLValues.Values['created_at'] <> '' then
+      FJSONObject.AddPair('created_at', FormatDateTime('yyyy-mm-dd hh:nn:ss', StrToDateTime(SLValues.Values['created_at'])))
+    else
+      FJSONObject.AddPair('created_at', '0000-00-00 00:00:00');
+
+    if SLValues.Values['updated_at'] <> '' then
+      FJSONObject.AddPair('updated_at', FormatDateTime('yyyy-mm-dd hh:nn:ss', StrToDateTime(SLValues.Values['updated_at'])))
+    else
+      FJSONObject.AddPair('updated_at', '0000-00-00 00:00:00');
+  end;
+
+  Result := FJSONObject;
 end;
 
 procedure TOlfeiCoreORM.Cache;
@@ -440,7 +607,7 @@ begin
   end;
 end;
 
-function TOlfeiCoreORM.FormatValue(Index: Integer): string;
+{function TOlfeiCoreORM.FormatValue(Index: Integer): string;
 var
   i: integer;
 begin
@@ -454,6 +621,22 @@ begin
       else
         Exit(Self.SLValues.ValueFromIndex[Index]);
     end;
+end;}
+
+function TOlfeiCoreORM.FormatValueByField(Index: Integer): string;
+begin
+  if AnsiLowerCase(Fields[Index].ItemType) = 'tdatetime' then
+  begin
+    if Self.SLValues.IndexOfName(Fields[Index].Name) <> -1 then
+      Exit(FormatDateTime('yyyy-mm-dd hh:nn:ss', StrToDateTime(Self.SLValues.Values[Fields[Index].Name])))
+  end
+  else if AnsiLowerCase(Fields[Index].ItemType) = 'tdate' then
+  begin
+    if Self.SLValues.IndexOfName(Fields[Index].Name) <> -1 then
+      Exit(FormatDateTime('yyyy-mm-dd', StrToDate(Self.SLValues.Values[Fields[Index].Name])))
+  end;
+
+  Exit(Self.SLValues.Values[Fields[Index].Name]);
 end;
 
 procedure TOlfeiCoreORM.Save;
@@ -469,9 +652,13 @@ begin
   begin
     if Self.Exists then
     begin
-      for i := 0 to SLValues.Count - 1 do
+      for i := 0 to Length(Fields) - 1 do
+        if (Fields[i].Name <> 'created_at') and (Fields[i].Name <> '') and (Fields[i].Name <> 'updated_at') then
+          Query := Query + DBConnection.Quote + Fields[i].Name + DBConnection.Quote + ' = "' + Self.FormatValueByField(i) + '",';
+
+      {for i := 0 to SLValues.Count - 1 do
         if (SLValues.Names[i] <> 'created_at') and (SLValues.Names[i] <> 'updated_at') then
-          Query := Query + DBConnection.Quote + SLValues.Names[i] + DBConnection.Quote + ' = "' + Self.FormatValue(i) + '",';
+          Query := Query + DBConnection.Quote + SLValues.Names[i] + DBConnection.Quote + ' = "' + Self.FormatValue(i) + '",';}
 
       for i := 0 to Length(BlobFields) - 1 do
         if (Length(BlobValues) > i) then
@@ -488,12 +675,19 @@ begin
     end
     else
     begin
-      for i := 0 to SLValues.Count - 1 do
+      for i := 0 to Length(Fields) - 1 do
+        if (Fields[i].Name <> 'created_at') and (Fields[i].Name <> '') and (Fields[i].Name <> 'updated_at') then
+        begin
+          QueryFields := QueryFields + DBConnection.Quote + Fields[i].Name + DBConnection.Quote + ',';
+          QueryValues := QueryValues + '"' + Self.FormatValueByField(i) + '",';
+        end;
+
+      {for i := 0 to SLValues.Count - 1 do
         if (SLValues.Names[i] <> 'created_at') and (SLValues.Names[i] <> 'updated_at') then
         begin
           QueryFields := QueryFields + DBConnection.Quote + SLValues.Names[i] + DBConnection.Quote + ',';
           QueryValues := QueryValues + '"' + Self.FormatValue(i) + '",';
-        end;
+        end;}
 
       for i := 0 to Length(BlobFields) - 1 do
         if (Length(BlobValues) > i) then
@@ -557,7 +751,15 @@ begin
 
   RttiValue := RttiType.GetMethod('Create').Invoke(RttiType.AsInstance.MetaclassType, RttiParameters);
 
-  Result := RttiValue.AsObject;
+   if Length(OlfeiForeigns) < index + 1 then
+    SetLength(OlfeiForeigns, index + 1);
+
+  if not Assigned(OlfeiForeigns[index]) then
+    OlfeiForeigns[index] := RttiValue.AsObject
+  else
+    Result := OlfeiForeigns[index];
+
+  Result := OlfeiForeigns[index];
   (Result as TOlfeiCoreORM).FieldName := ForeignFields[index].FLocalKey;
 
   RttiContext.Free;
@@ -633,7 +835,7 @@ end;
 
 function TOlfeiCoreORM.GetDate(index: Integer): TDate;
 begin
-  if SLValues.IndexOfName(IndexToField(Index)) <> -1 then
+  if (SLValues.IndexOfName(IndexToField(Index)) <> -1) and (SLValues.Values[IndexToField(Index)] <> '') then
     Result := StrToDate(SLValues.Values[IndexToField(Index)])
   else
     Result := 0;

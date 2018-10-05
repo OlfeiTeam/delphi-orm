@@ -16,7 +16,6 @@ type
     procedure UpdateTable(OlfeiTable: TObject); virtual; abstract;
     procedure DropTable(OlfeiTable: TObject); virtual; abstract;
     procedure Init(Parameters: TStringList); virtual; abstract;
-    function Convert(Parameters: TStringList): TStringList; virtual; abstract;
 
     function PrepareDefault(ADefault: string): String;
     function IsMigrate(MigrationName: string): Boolean;

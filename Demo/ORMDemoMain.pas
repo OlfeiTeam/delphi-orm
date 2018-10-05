@@ -34,28 +34,21 @@ implementation
 
 uses
   OlfeiSQL, OlfeiUser, OlfeiUsers, OlfeiTest,
-    OlfeiORM, OlfeiCollection, OlfeiImage, OlfeiPool;
+    OlfeiORM, OlfeiCollection, OlfeiImage;
 
 procedure TfrmMain.btnNewClick(Sender: TObject);
 var
-  OlfeiPool: TOlfeiPool;
   OlfeiDB: TOlfeiDB;
   OlfeiUser, OlfeiFriend: TOlfeiUser;
   OlfeiImage: TOlfeiImage;
-
-  Parameters: TStringList;
 begin
-  Parameters := TStringList.Create;
+  OlfeiDB := TOlfeiDB.Create;
 
-  Parameters.Values['driver'] := 'mysql';
-  Parameters.Values['host'] := '192.168.1.6';
-  Parameters.Values['database'] := 'test';
-  Parameters.Values['user'] := 'hrc';
-  Parameters.Values['password'] := 'hrc.lan';
-
-  OlfeiPool := TOlfeiPool.Create;
-
-  OlfeiDB := TOlfeiDB.Create(OlfeiPool.AddConnection('MySQL', Parameters).name);
+  OlfeiDB.Parameters.Values['driver'] := 'mysql';
+  OlfeiDB.Parameters.Values['host'] := '192.168.1.6';
+  OlfeiDB.Parameters.Values['database'] := 'test';
+  OlfeiDB.Parameters.Values['user'] := 'hrc';
+  OlfeiDB.Parameters.Values['password'] := 'hrc.lan';
 
   //OlfeiDB.Parameters.Values['driver'] := 'sqlite';
   //OlfeiDB.Parameters.Values['database'] := './test.sqlite';
@@ -70,9 +63,12 @@ begin
   OlfeiUser.Save;
 
   mmoTest.Lines.Add(OlfeiUser.Avatar.DataString);
+  mmoTest.Lines.Add(OlfeiUser.Avatar.DataString);
+  mmoTest.Lines.Add(OlfeiUser.Avatar.DataString);
+  mmoTest.Lines.Add(OlfeiUser.Avatar.DataString);
 
-  for OlfeiImage in OlfeiUser.Images.All do
-    mmoTest.Lines.Add(OlfeiImage.Name);
+  {for OlfeiImage in OlfeiUser.Images.All do
+    mmoTest.Lines.Add(OlfeiImage.Name); }
 
   for OlfeiFriend in OlfeiUser.Friends.All do
     mmoTest.Lines.Add('Friend: ' + OlfeiFriend.Name);
@@ -90,7 +86,7 @@ begin
   TTask.Run(procedure
   var
     OlfeiDB: TOlfeiDB;
-//    OlfeiUser: TOlfeiUser;
+    OlfeiTest: TOlfeiTest;
     OlfeiUsers: TOlfeiUsers;
 //    OlfeiImage: TOlfeiImage;
 
@@ -112,10 +108,10 @@ begin
 
     OlfeiDB.Connect;
 
-    OlfeiUsers := TOlfeiUsers.Create(OlfeiDB);
-    OlfeiTestCollection := TOlfeiCollection<TOlfeiTest>.Create(OlfeiDB, TOlfeiTest);
+    OlfeiTest := TOlfeiTest.Create(OlfeiDB, 1);
+    Self.mmoTest.Lines.Add(OlfeiTest.User.Images.ID.ToString);
 
-    for i := 0 to 10 do
+    {for i := 0 to 10 do
     begin
 //      OlfeiUser := OlfeiUsers.Where('id', '=', '1').First;
 //      OlfeiTest := OlfeiTestCollection.Where('id', '=', '1').First;
@@ -131,11 +127,12 @@ begin
         TThread.Synchronize(nil, procedure
         begin
           mmoTest.Lines.Add(OlfeiImage.Name);
-        end);}
+        end);
     end;
 
     OlfeiTestCollection.Free;
-    OlfeiUsers.Free;
+    OlfeiUsers.Free;      }
+    OlfeiTest.Free;
     OlfeiDB.Free;
   end);
 end;
@@ -148,6 +145,7 @@ begin
     OlfeiUser: TOlfeiUser;
     OlfeiUsers: TOlfeiUsers;
 
+    Str: string;
     i: Integer;
   begin
     OlfeiDB := TOlfeiDB.Create;
@@ -158,6 +156,9 @@ begin
     OlfeiDB.Connect;
 
     OlfeiUsers := TOlfeiUsers.Create(OlfeiDB);
+    str := OlfeiUsers.Where('id', '>', '0').ToJSON().ToJSON;
+
+    mmoTest.Lines.Add(str);
 
     for i := 0 to 10 do
     begin

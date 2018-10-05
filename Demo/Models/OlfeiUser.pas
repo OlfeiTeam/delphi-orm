@@ -9,7 +9,7 @@ type
   [TOlfeiTable('users')]
   TOlfeiUser = class(TOlfeiORM)
     private
-      function GetOlfeiImages(index: integer): TOlfeiCollection<TOlfeiImage>;
+      function GetOlfeiImage(index: Integer): TOlfeiImage;
       function GetOlfeiFriends(index: integer): TOlfeiCollection<TOlfeiUser>;
     public
       [TOlfeiField('name')]
@@ -36,8 +36,8 @@ type
       [TOlfeiBlobField('avatar')]
       property Avatar: TStringStream index 0 read GetBlob;
 
-      [TOlfeiCollectionField('id', 'user_id')]
-      property Images: TOlfeiCollection<TOlfeiImage> index 0 read GetOlfeiImages;
+      [TOlfeiForeignField('id', 'user_id')]
+      property Images: TOlfeiImage index 0 read GetOlfeiImage;
 
       [TOlfeiPivotField('user_friend', 'user_id', 'friend_id')]
       property Friends: TOlfeiCollection<TOlfeiUser> index 1 read GetOlfeiFriends;
@@ -45,9 +45,9 @@ type
 
 implementation
 
-function TOlfeiUser.GetOlfeiImages(index: Integer): TOlfeiCollection<TOlfeiImage>;
+function TOlfeiUser.GetOlfeiImage(index: Integer): TOlfeiImage;
 begin
-  Result := TOlfeiCollection<TOlfeiImage>(Self.GetForeignCollection(index, TOlfeiImage));
+  Result := TOlfeiImage(Self.GetForeignObject(index, TOlfeiImage));
 end;
 
 function TOlfeiUser.GetOlfeiFriends(index: Integer): TOlfeiCollection<TOlfeiUser>;

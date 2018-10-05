@@ -4,7 +4,7 @@ interface
 
 uses
   OlfeiSQL, System.SysUtils, System.Classes, FireDac.Comp.Client, System.Rtti,
-    OlfeiORM, System.Generics.Collections;
+    OlfeiORM, System.Generics.Collections, System.JSON;
 
 type
   TOlfeiCollectionEnumerator<T> = class
@@ -29,6 +29,7 @@ type
 
   TOlfeiCollection<T: class> = class
     private
+      FJSONArray: TJSONArray;
       FTable: String;
       FDB: TOlfeiDB;
       FParentClass: TClass;
@@ -36,15 +37,17 @@ type
       IsPivot: boolean;
       QueryString, OrderString, LimitString, DistinctString: String;
 
+      FFilterFields: TOlfeiFilterFields;
+
       FRemoteKey, FRemoteTable, FLocalKey: string;
 
       procedure Clear;
-      procedure ClearOld;
     protected
       Elements: TOlfeiResultArray<T>;
       Iterator: TOlfeiCollectionResult<T>;
 
       function GetResultQuery: string;
+      function RttiMethodInvokeEx(const MethodName:string; RttiType : TRttiType; Instance: TValue; const Args: array of TValue): TValue;
     public
       property RemoteKey: string read FRemoteKey write FRemoteKey;
       property RemoteTable: string read FRemoteTable write FRemoteTable;
@@ -52,7 +55,6 @@ type
 
       function Where(Name, Comparison, Value: String): TOlfeiCollection<T>; overload;
       function Where(Name, Value: string): TOlfeiCollection<T>; overload;
-      function WhereRaw(Expression: string): TOlfeiCollection<T>;
       function StartGroup: TOlfeiCollection<T>;
       function StartAndGroup: TOlfeiCollection<T>;
       function StartOrGroup: TOlfeiCollection<T>;
@@ -71,33 +73,56 @@ type
       function Sum(Field: string): Real;
       function Min(Field: string): Real;
       function Max(Field: string): Real;
-      function Avg(Field: string): Real;
 
       procedure Truncate;
       procedure Delete;
+
+      function Select(const AFilterFields: array of string): TOlfeiCollection<T>;
 
       constructor Create(ADB: TOlfeiDB; AParentClass: TClass; Pivot: boolean = false); overload;
       destructor Destroy; override;
 
       function All: TOlfeiCollectionResult<T>;
       function First: T;
+      function ToJSON: TJSONArray;
   end;
 
 implementation
 
-function TOlfeiCollection<T>.WhereRaw(Expression: string): TOlfeiCollection<T>;
+function TOlfeiCollection<T>.RttiMethodInvokeEx(const MethodName: string; RttiType: TRttiType; Instance: TValue; const Args: array of TValue): TValue;
+var
+  Found   : Boolean;
+  LMethod : TRttiMethod;
+  LIndex  : Integer;
+  LParams : TArray<TRttiParameter>;
 begin
-  if StrPos(PChar(QueryString), PChar('WHERE')) = nil then
-    QueryString := QueryString + 'WHERE ' + Expression + ' '
+  Result := nil;
+  LMethod := nil;
+  Found := False;
+
+  for LMethod in RttiType.GetMethods do
+    if SameText(LMethod.Name, MethodName) then
+    begin
+      LParams := LMethod.GetParameters;
+      if Length(Args) = Length(LParams) then
+      begin
+        Found := True;
+        for LIndex := 0 to Length(LParams) - 1 do
+        if LParams[LIndex].ParamType.Handle <> Args[LIndex].TypeInfo then
+        begin
+          Found := False;
+          Break;
+        end;
+      end;
+
+      if Found then
+        Break;
+   end;
+
+  if (LMethod <> nil) and Found then
+    Result := LMethod.Invoke(Instance, Args)
   else
-    if IsPreInput then
-      QueryString := QueryString + 'AND ' + Expression + ' '
-    else
-      QueryString := QueryString + Expression + ' ';
-
-  IsPreInput := True;
-
-  Result := Self;
+    raise Exception.CreateFmt('method %s not found', [MethodName]);
 end;
 
 procedure TOlfeiCollectionResult<T>.Assign(AList: TOlfeiResultArray<T>);
@@ -143,6 +168,8 @@ var
   RttiValue: TValue;
   RttiParameters: TArray<TValue>;
 begin
+  FJSONArray := TJSONArray.Create;
+
   FDB := ADB;
   FParentClass := AParentClass;
   IsPivot := Pivot;
@@ -162,13 +189,21 @@ begin
 
   RttiContext.Free;
 
-  Self.ClearOld;
+  QueryString := '';
+  OrderString := '';
+  LimitString := '';
+  DistinctString := '';
+
+  IsPreInput := False;
 
   Iterator := TOlfeiCollectionResult<T>.Create;
 end;
 
 destructor TOlfeiCollection<T>.Destroy;
 begin
+  if Assigned(FJSONArray) then
+    FJSONArray.Free;
+
   Self.Clear;
   Iterator.Free;
 
@@ -240,6 +275,20 @@ begin
     QueryString := QueryString + 'WHERE ( '
   else
     QueryString := QueryString + ' (';
+
+  Result := Self;
+end;
+
+function TOlfeiCollection<T>.Select(const AFilterFields: array of string): TOlfeiCollection<T>;
+var
+  i: integer;
+begin
+  SetLength(FFilterFields, 0);
+  for i := 0 to Length(AFilterFields) - 1 do
+  begin
+    SetLength(FFilterFields, Length(FFilterFields) + 1);
+    FFilterFields[Length(FFilterFields) - 1] := AFilterFields[i];
+  end;
 
   Result := Self;
 end;
@@ -349,11 +398,12 @@ begin
     RttiContext := TRttiContext.Create;
     RttiType := RttiContext.GetType(FParentClass);
 
-    Setlength(RttiParameters, 2);
+    Setlength(RttiParameters, 3);
     RttiParameters[0] := TValue.From<TOlfeiDB>(FDB);
-    RttiParameters[1] := TValue.From<Integer>(DS.FieldByName('id').AsInteger);
+    RttiParameters[1] := TValue.From<TOlfeiFilterFields>(FFilterFields);
+    RttiParameters[2] := TValue.From<Integer>(DS.FieldByName('id').AsInteger);
 
-    RttiValue := RttiType.GetMethod('Create').Invoke(RttiType.AsInstance.MetaclassType, RttiParameters);
+    RttiValue := RttiMethodInvokeEx('Create', RttiType, RttiType.AsInstance.MetaclassType, RttiParameters);
 
     SetLength(Elements, Length(Elements) + 1);
     Elements[Length(Elements) - 1] := T(RttiValue.AsObject);
@@ -363,12 +413,58 @@ begin
     DS.Next;
   end;
 
-  Self.ClearOld;
+  QueryString := '';
+  OrderString := '';
+  LimitString := '';
 
   DS.Free;
 
   Iterator.Assign(Elements);
   Result := Iterator;
+end;
+
+function TOlfeiCollection<T>.ToJSON: TJSONArray;
+var
+  DS: TFDMemTable;
+
+  RttiContext: TRttiContext;
+  RttiType: TRttiType;
+  RttiValue: TValue;
+  RttiParameters: TArray<TValue>;
+  JSONObject: TJSONObject;
+begin
+  DS := FDB.GetSQL(Self.GetResultQuery);
+
+  while not DS.Eof do
+  begin
+    RttiContext := TRttiContext.Create;
+    RttiType := RttiContext.GetType(FParentClass);
+
+    Setlength(RttiParameters, 3);
+    RttiParameters[0] := TValue.From<TOlfeiDB>(FDB);
+    RttiParameters[1] := TValue.From<TOlfeiFilterFields>(FFilterFields);
+    RttiParameters[2] := TValue.From<Integer>(DS.FieldByName('id').AsInteger);
+
+    RttiValue := RttiMethodInvokeEx('Create', RttiType, RttiType.AsInstance.MetaclassType, RttiParameters);
+
+    SetLength(Elements, Length(Elements) + 1);
+    Elements[Length(Elements) - 1] := T(RttiValue.AsObject);
+
+    JSONObject := (TJSONObject.ParseJSONValue((Elements[Length(Elements) - 1] as TOlfeiCoreORM).ToJSON.ToString) as TJSONObject);
+    FJSONArray.Add(JSONObject);
+
+    RttiContext.Free;
+
+    DS.Next;
+  end;
+
+  QueryString := '';
+  OrderString := '';
+  LimitString := '';
+
+  DS.Free;
+
+  Result := FJSONArray;
 end;
 
 procedure TOlfeiCollection<T>.Delete;
@@ -394,31 +490,34 @@ var
   RttiValue: TValue;
   RttiParameters: TArray<TValue>;
 begin
-  DS := FDB.GetSQL(Self.GetResultQuery + ' LIMIT 0,1');
+  DS := FDB.GetSQL(Self.GetResultQuery + ' LIMIT 1');
 
-  //Self.Clear;
+  Self.Clear;
 
   RttiContext := TRttiContext.Create;
   RttiType := RttiContext.GetType(FParentClass);
 
-  Setlength(RttiParameters, 2);
+  Setlength(RttiParameters, 3);
   RttiParameters[0] := TValue.From<TOlfeiDB>(FDB);
+  RttiParameters[1] := TValue.From<TOlfeiFilterFields>(FFilterFields);
 
   if not DS.Eof then
-    RttiParameters[1] := TValue.From<Integer>(DS.FieldByName('id').AsInteger)
+    RttiParameters[2] := TValue.From<Integer>(DS.FieldByName('id').AsInteger)
   else
-    RttiParameters[1] := 0;
+    RttiParameters[2] := 0;
 
-  RttiValue := RttiType.GetMethod('Create').Invoke(RttiType.AsInstance.MetaclassType, RttiParameters);
+  RttiValue := RttiMethodInvokeEx('Create', RttiType, RttiType.AsInstance.MetaclassType, RttiParameters);
 
   SetLength(Elements, Length(Elements) + 1);
   Elements[Length(Elements) - 1] := T(RttiValue.AsObject);
 
-  Result := Elements[Length(Elements) - 1];
+  Result := Elements[0];
 
   RttiContext.Free;
 
-  Self.ClearOld;
+  QueryString := '';
+  OrderString := '';
+  LimitString := '';
 
   DS.Free;
 end;
@@ -427,35 +526,28 @@ function TOlfeiCollection<T>.Count: Integer;
 begin
   Result := FDB.GetOnce('SELECT ' + DistinctString + ' COUNT(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + 'id' + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToInteger();
 
-  Self.ClearOld;
+  QueryString := '';
 end;
 
 function TOlfeiCollection<T>.Sum(Field: string): real;
 begin
   Result := FDB.GetOnce('SELECT ' + DistinctString + ' SUM(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
 
-  Self.ClearOld;
-end;
-
-function TOlfeiCollection<T>.Avg(Field: string): real;
-begin
-  Result := FDB.GetOnce('SELECT ' + DistinctString + ' AVG(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
-
-  Self.ClearOld;
+  QueryString := '';
 end;
 
 function TOlfeiCollection<T>.Max(Field: string): real;
 begin
   Result := FDB.GetOnce('SELECT ' + DistinctString + ' MAX(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
 
-  Self.ClearOld;
+  QueryString := '';
 end;
 
 function TOlfeiCollection<T>.Min(Field: string): real;
 begin
   Result := FDB.GetOnce('SELECT ' + DistinctString + ' MIN(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
 
-  Self.ClearOld;
+  QueryString := '';
 end;
 
 function TOlfeiCollection<T>.Join(Table, FieldJoin, FieldJoinWith: string): TOlfeiCollection<T>;
@@ -477,16 +569,6 @@ begin
 
   if FDB.Driver = 'mysql' then
     FDB.RunSQL('ALTER TABLE' + FDB.Quote + FTable + FDB.Quote + ' '+ 'AUTO_INCREMENT = 1');
-end;
-
-procedure TOlfeiCollection<T>.ClearOld;
-begin
-  QueryString := '';
-  OrderString := '';
-  LimitString := '';
-  DistinctString := '';
-
-  IsPreInput := False;
 end;
 
 procedure TOlfeiCollection<T>.Clear;
