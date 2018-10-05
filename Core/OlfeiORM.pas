@@ -190,12 +190,20 @@ begin
 
   UseTimestamps := true;
 
-  Query := Query + DBConnection.Quote + 'created_at' + DBConnection.Quote + ',' + DBConnection.Quote + 'updated_at' + DBConnection.Quote;
-  DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString());
+  if Isset(ID) then
+  begin
+    Query := Query + DBConnection.Quote + 'created_at' + DBConnection.Quote + ',' + DBConnection.Quote + 'updated_at' + DBConnection.Quote;
+    DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString());
 
-  SLValues.Values['created_at'] := PrepareValue('tdatetime', DS.FieldByName('created_at').AsString);
-  SLValues.Values['updated_at'] := PrepareValue('tdatetime', DS.FieldByName('updated_at').AsString);
-  
+    SLValues.Values['created_at'] := PrepareValue('tdatetime', DS.FieldByName('created_at').AsString);
+    SLValues.Values['updated_at'] := PrepareValue('tdatetime', DS.FieldByName('updated_at').AsString);
+  end
+  else
+  begin
+    SLValues.Values['created_at'] := PrepareValue('tdatetime', '0000-00-00 00:00:00');
+    SLValues.Values['updated_at'] := PrepareValue('tdatetime', '0000-00-00 00:00:00');
+  end;
+
   DS.Free;
 end;
 
@@ -331,7 +339,7 @@ end;
 
 function TOlfeiCoreORM.Isset(FID: Integer): boolean;
 begin
-  Result := DBConnection.GetOnce('SELECT ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + FID.ToString() + ' LIMIT 1', 'integer') <> '0';
+  Result := DBConnection.GetOnce('SELECT COUNT(' + DBConnection.Quote + 'id' + DBConnection.Quote + ') as mc FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + FID.ToString(), 'integer') <> '0';
 end;
 
 function TOlfeiORM.GetCreated: TDateTime;

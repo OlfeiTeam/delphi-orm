@@ -74,7 +74,8 @@ begin
     {$ENDIF}
   end;
 
-  Parameters.Values['Pooled']:= 'True';
+  Parameters.Values['Pooled'] := 'True';
+  Parameters.Values['POOL_MaximumItems'] := '500';
 
   tmp := '1';
   if CountConnection.IndexOf(Driver) > -1 then

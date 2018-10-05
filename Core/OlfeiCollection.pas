@@ -52,6 +52,7 @@ type
 
       function Where(Name, Comparison, Value: String): TOlfeiCollection<T>; overload;
       function Where(Name, Value: string): TOlfeiCollection<T>; overload;
+      function WhereRaw(Expression: string): TOlfeiCollection<T>;
       function StartGroup: TOlfeiCollection<T>;
       function StartAndGroup: TOlfeiCollection<T>;
       function StartOrGroup: TOlfeiCollection<T>;
@@ -83,6 +84,21 @@ type
   end;
 
 implementation
+
+function TOlfeiCollection<T>.WhereRaw(Expression: string): TOlfeiCollection<T>;
+begin
+  if StrPos(PChar(QueryString), PChar('WHERE')) = nil then
+    QueryString := QueryString + 'WHERE ' + Expression + ' '
+  else
+    if IsPreInput then
+      QueryString := QueryString + 'AND ' + Expression + ' '
+    else
+      QueryString := QueryString + Expression + ' ';
+
+  IsPreInput := True;
+
+  Result := Self;
+end;
 
 procedure TOlfeiCollectionResult<T>.Assign(AList: TOlfeiResultArray<T>);
 begin
@@ -378,7 +394,7 @@ var
   RttiValue: TValue;
   RttiParameters: TArray<TValue>;
 begin
-  DS := FDB.GetSQL(Self.GetResultQuery + ' LIMIT 1');
+  DS := FDB.GetSQL(Self.GetResultQuery + ' LIMIT 0,1');
 
   //Self.Clear;
 
