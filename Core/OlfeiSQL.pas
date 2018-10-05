@@ -7,7 +7,7 @@ uses Classes, Sysutils,
   FireDAC.Stan.Option, FireDAC.Stan.Error, FireDAC.UI.Intf, FireDAC.Phys.Intf,
   FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys,
   FireDAC.Comp.Client, FireDAC.Phys.SQLite, FireDAC.DApt, Data.DB,
-  System.IniFiles, System.Threading
+  System.IniFiles, System.Threading, System.IOUtils
 
   {$IFDEF MSWINDOWS}
     ,FireDAC.Phys.MySQL
@@ -28,6 +28,8 @@ type
     CriticalSection: TCriticalSection;
     flLoaded, flAutoMigrate: Boolean;
     DriverConnect: TObject;
+    IsDebug: Boolean;
+    DebugFileName: string;
 
     {$IFDEF MSWINDOWS}
       FDPhysMySQLDriverLink: TFDPhysMySQLDriverLink;
@@ -35,6 +37,7 @@ type
 
     function IsRaw(val: string): boolean;
     function ClearRaw(val: string): string;
+    procedure DebugSQL(Query: string);
   public
     Parameters: TStringList;
     SQLConnection: TFDConnection;
@@ -54,6 +57,7 @@ type
     function Quoted(val: string): string;
     function FullQuoted(val: string): string;
     function Raw(val: string): string;
+    procedure SetDebugFile(FileName: string);
   end;
 
 implementation
@@ -90,6 +94,17 @@ begin
     Result := '';
 end;
 
+procedure TOlfeiDB.DebugSQL(Query: string);
+begin
+  if IsDebug then
+  begin
+    if not FileExists(DebugFileName) then
+      TFile.Create(DebugFileName);
+
+    TFile.AppendAllText(DebugFileName, Query + #10#13);
+  end;
+end;
+
 function TOlfeiDB.FullQuoted(val: string): string;
 begin
   if Self.IsRaw(val) then
@@ -117,6 +132,7 @@ constructor TOlfeiDB.Create(AutoMigrate: boolean = True);
 begin
   flLoaded := true;
   flAutoMigrate := AutoMigrate;
+  IsDebug := false;
 
   SQLConnection := TFDConnection.Create(nil);
 
@@ -166,6 +182,12 @@ begin
   end;
 end;
 
+procedure TOlfeiDB.SetDebugFile(FileName: string);
+begin
+  IsDebug := True;
+  DebugFileName := FileName;
+end;
+
 procedure TOlfeiDB.Migrate;
 var
   OlfeiSchema: TOlfeiSchema;
@@ -179,6 +201,8 @@ function TOlfeiDB.GetSQL(SQL: string): TFDMemTable;
 var
   Query: TFDQuery;
 begin
+  Self.DebugSQL(SQL);
+
   if SQLConnection.Connected then
   begin
     CriticalSection.Enter;
@@ -206,6 +230,8 @@ end;
 
 procedure TOlfeiDB.RunSQL(SQL: string);
 begin
+  Self.DebugSQL(SQL);
+
   if SQLConnection.Connected then
   begin
     CriticalSection.Enter;
@@ -220,6 +246,8 @@ function TOlfeiDB.GetOnce(SQL, ValueType: string): string;
 var
   DS: TFDMemTable;
 begin
+  Self.DebugSQL(SQL);
+
   if SQLConnection.Connected then
   begin
     DS := GetSQL(SQL);
