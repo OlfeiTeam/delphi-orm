@@ -100,7 +100,7 @@ begin
   begin
     TMonitor.Enter(Self);
 
-    TFile.AppendAllText(DebugFileName, Query + #10#13);
+    TFile.AppendAllText(DebugFileName, Query + #10#13, TEncoding.UTF8);
 
     TMonitor.Exit(Self);
   end;
