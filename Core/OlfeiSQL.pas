@@ -98,10 +98,11 @@ procedure TOlfeiDB.DebugSQL(Query: string);
 begin
   if IsDebug then
   begin
-    if not FileExists(DebugFileName) then
-      TFile.Create(DebugFileName);
+    TMonitor.Enter(Self);
 
     TFile.AppendAllText(DebugFileName, Query + #10#13);
+
+    TMonitor.Exit(Self);
   end;
 end;
 
