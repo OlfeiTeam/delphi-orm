@@ -180,6 +180,7 @@ begin
   Setlength(RttiParameters, 2);
   RttiParameters[0] := TValue.From<TOlfeiDB>(ADB);
   RttiParameters[1] := TValue.From<Integer>(0);
+  RttiParameters[2] := False;
 
   RttiValue := RttiType.GetMethod('Create').Invoke(RttiType.AsInstance.MetaclassType, RttiParameters);
 
