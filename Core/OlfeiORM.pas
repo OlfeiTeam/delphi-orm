@@ -753,7 +753,7 @@ begin
   RttiContext := TRttiContext.Create;
   RttiType := RttiContext.GetType(T);
 
-  Setlength(RttiParameters, 2);
+  Setlength(RttiParameters, 3);
   RttiParameters[0] := TValue.From<TOlfeiDB>(DBConnection);
   RttiParameters[1] := RemoteID;
   RttiParameters[2] := True;

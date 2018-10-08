@@ -177,7 +177,7 @@ begin
   RttiContext := TRttiContext.Create;
   RttiType := RttiContext.GetType(FParentClass);
 
-  Setlength(RttiParameters, 2);
+  Setlength(RttiParameters, 3);
   RttiParameters[0] := TValue.From<TOlfeiDB>(ADB);
   RttiParameters[1] := TValue.From<Integer>(0);
   RttiParameters[2] := False;
@@ -399,7 +399,7 @@ begin
     RttiContext := TRttiContext.Create;
     RttiType := RttiContext.GetType(FParentClass);
 
-    Setlength(RttiParameters, 3);
+    Setlength(RttiParameters, 4);
     RttiParameters[0] := TValue.From<TOlfeiDB>(FDB);
     RttiParameters[1] := TValue.From<TOlfeiFilterFields>(FFilterFields);
     RttiParameters[2] := TValue.From<Integer>(DS.FieldByName('id').AsInteger);
@@ -442,7 +442,7 @@ begin
     RttiContext := TRttiContext.Create;
     RttiType := RttiContext.GetType(FParentClass);
 
-    Setlength(RttiParameters, 3);
+    Setlength(RttiParameters, 4);
     RttiParameters[0] := TValue.From<TOlfeiDB>(FDB);
     RttiParameters[1] := TValue.From<TOlfeiFilterFields>(FFilterFields);
     RttiParameters[2] := TValue.From<Integer>(DS.FieldByName('id').AsInteger);
@@ -503,7 +503,7 @@ begin
   RttiContext := TRttiContext.Create;
   RttiType := RttiContext.GetType(FParentClass);
 
-  Setlength(RttiParameters, 3);
+  Setlength(RttiParameters, 4);
   RttiParameters[0] := TValue.From<TOlfeiDB>(FDB);
   RttiParameters[1] := TValue.From<TOlfeiFilterFields>(FFilterFields);
 
