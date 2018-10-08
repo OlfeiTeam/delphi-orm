@@ -756,6 +756,7 @@ begin
   Setlength(RttiParameters, 2);
   RttiParameters[0] := TValue.From<TOlfeiDB>(DBConnection);
   RttiParameters[1] := RemoteID;
+  RttiParameters[2] := True;
 
   RttiValue := RttiType.GetMethod('Create').Invoke(RttiType.AsInstance.MetaclassType, RttiParameters);
 
