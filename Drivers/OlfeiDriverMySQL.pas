@@ -9,6 +9,7 @@ uses
 type
   TOlfeiDriverMySQL = class(TOlfeiSQLDriver)
     procedure Init(Parameters: TStringList); override;
+    function Convert(Parameters: TStringList): TStringList; override;
 
     function CheckTable(TableName: string): Boolean; override;
     procedure NewTable(OlfeiTable: TObject); override;
@@ -20,6 +21,19 @@ type
   end;
 
 implementation
+
+function TOlfeiDriverMySQL.Convert(Parameters: TStringList): TStringList;
+begin
+  Result := TStringList.Create;
+
+  Result.Values['DriverID'] := 'MySQL';
+  Result.Values['Server'] := Parameters.Values['host'];
+  Result.Values['Port'] := Parameters.Values['port'];
+  Result.Values['CharacterSet'] := 'utf8';
+  Result.Values['Database'] := Parameters.Values['database'];
+  Result.Values['User_Name'] := Parameters.Values['user'];
+  Result.Values['Password'] := Parameters.Values['password'];
+end;
 
 procedure TOlfeiDriverMySQL.Init(Parameters: TStringList);
 begin

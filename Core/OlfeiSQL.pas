@@ -43,8 +43,10 @@ type
     SQLConnection: TFDConnection;
     Quote: string;
     Driver: string;
+    IsPool: boolean;
 
     constructor Create(AutoMigrate: boolean = True); overload;
+    constructor Create(ConnectionName: string; AutoMigrate: Boolean = True); overload;
     destructor Destroy; override;
     function GetSQL(SQL: string): TFDMemTable;
     function GetOnce(SQL, ValueType: string): string;
@@ -129,8 +131,33 @@ begin
   Result := Pos('RAWDATA', val) > 0;
 end;
 
+constructor TOlfeiDB.Create(ConnectionName: string; AutoMigrate: Boolean = true);
+begin
+  IsPool := True;
+
+  flLoaded := true;
+  flAutoMigrate := AutoMigrate;
+
+  SQLConnection := TFDConnection.Create(nil);
+
+  SQLConnection.ConnectionDefName := ConnectionName;
+
+  SQLConnection.FetchOptions.Mode := fmAll;
+  SQLConnection.FetchOptions.RowsetSize := 300;
+  SQLConnection.FetchOptions.AutoClose := True;
+  SQLConnection.TxOptions.AutoCommit := True;
+
+  SQLConnection.ResourceOptions.SilentMode := True;
+
+  CriticalSection := TCriticalSection.Create;
+
+  Parameters := TStringList.Create;
+end;
+
 constructor TOlfeiDB.Create(AutoMigrate: boolean = True);
 begin
+  IsPool := false;
+
   flLoaded := true;
   flAutoMigrate := AutoMigrate;
   IsDebug := false;
@@ -154,7 +181,19 @@ end;
 
 procedure TOlfeiDB.Connect;
 begin
-  Driver := Parameters.Values['driver'];
+  if IsPool then
+  begin
+    if Pos(AnsiUpperCase('MySQL'), AnsiUpperCase(SQLConnection.ConnectionDefName)) > 0 then
+      Driver := 'mysql';
+
+    if Pos(AnsiUpperCase('SQLite'), AnsiUpperCase(SQLConnection.ConnectionDefName)) > 0 then
+      Driver := 'sqlite';
+  end
+  else
+    Driver := Parameters.Values['driver'];
+
+  if Driver = '' then
+    raise Exception.Create('ORM support only SQLite and MySQL (MariaDB)');
 
   if Driver = 'sqlite' then
   begin

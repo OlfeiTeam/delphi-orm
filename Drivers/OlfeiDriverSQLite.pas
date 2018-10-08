@@ -9,6 +9,7 @@ uses
 type
   TOlfeiDriverSQLite = class(TOlfeiSQLDriver)
     procedure Init(Parameters: TStringList); override;
+    function Convert(Parameters: TStringList): TStringList; override;
 
     function CheckTable(TableName: string): Boolean; override;
     procedure NewTable(OlfeiTable: TObject); override;
@@ -23,6 +24,26 @@ implementation
 
 uses
   OlfeiSchema;
+
+function TOlfeiDriverSQLite.Convert(Parameters: TStringList): TStringList;
+
+  function PreparePath(FilePath: string): string;
+  begin
+    {$IF DEFINED(iOS) or DEFINED(ANDROID)}
+      Result := StringReplace(FilePath, '.\', TPath.GetDocumentsPath, []);
+      Result := StringReplace(FilePath, './', TPath.GetDocumentsPath, []);
+    {$ELSE}
+      Result := StringReplace(FilePath, '.\', ExtractFilePath(ParamStr(0)), []);
+      Result := StringReplace(FilePath, './', ExtractFilePath(ParamStr(0)), []);
+    {$ENDIF}
+  end;
+
+begin
+  Result := TStringList.Create;
+
+  Result.Values['DriverID'] := 'SQLite';
+  Result.Values['Database'] := PreparePath(Parameters.Values['database']);
+end;
 
 function TOlfeiDriverSQLite.FieldTypeToSQL(AType: Word; ASize, ADecimalSize: integer): string;
 begin
