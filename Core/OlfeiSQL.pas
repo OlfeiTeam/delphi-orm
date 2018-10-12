@@ -102,7 +102,7 @@ begin
   begin
     TMonitor.Enter(Self);
 
-    TFile.AppendAllText(DebugFileName, Query, TEncoding.UTF8);
+    TFile.AppendAllText(DebugFileName, Query + #13, TEncoding.UTF8);
 
     TMonitor.Exit(Self);
   end;

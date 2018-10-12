@@ -39,14 +39,17 @@ procedure TOlfeiDriverMySQL.Init(Parameters: TStringList);
 begin
   OlfeiDB.Quote := '`';
 
-  OlfeiDB.SQLConnection.DriverName := 'MySQL';
-  OlfeiDB.SQLConnection.Params.Values['DriverID'] := 'MySQL';
-  OlfeiDB.SQLConnection.Params.Values['Server'] := Parameters.Values['host'];
-  OlfeiDB.SQLConnection.Params.Values['Port'] := Parameters.Values['port'];
-  OlfeiDB.SQLConnection.Params.Values['CharacterSet'] := 'utf8';
-  OlfeiDB.SQLConnection.Params.Values['Database'] := Parameters.Values['database'];
-  OlfeiDB.SQLConnection.Params.Values['User_Name'] := Parameters.Values['user'];
-  OlfeiDB.SQLConnection.Params.Values['Password'] := Parameters.Values['password'];
+  if not OlfeiDB.IsPool then
+  begin
+    OlfeiDB.SQLConnection.DriverName := 'MySQL';
+    OlfeiDB.SQLConnection.Params.Values['DriverID'] := 'MySQL';
+    OlfeiDB.SQLConnection.Params.Values['Server'] := Parameters.Values['host'];
+    OlfeiDB.SQLConnection.Params.Values['Port'] := Parameters.Values['port'];
+    OlfeiDB.SQLConnection.Params.Values['CharacterSet'] := 'utf8';
+    OlfeiDB.SQLConnection.Params.Values['Database'] := Parameters.Values['database'];
+    OlfeiDB.SQLConnection.Params.Values['User_Name'] := Parameters.Values['user'];
+    OlfeiDB.SQLConnection.Params.Values['Password'] := Parameters.Values['password'];
+  end;
 end;
 
 function TOlfeiDriverMySQL.FieldTypeToSQL(AType: Word; ASize, ADecimalSize: integer): string;

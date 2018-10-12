@@ -362,10 +362,13 @@ procedure TOlfeiDriverSQLite.Init(Parameters: TStringList);
 begin
   OlfeiDB.Quote := '`';
 
-  OlfeiDB.SQLConnection.DriverName := 'SQLite';
-  OlfeiDB.SQLConnection.Params.Values['DriverID'] := 'SQLite';
-  OlfeiDB.SQLConnection.Params.Values['Database'] := PreparePath(Parameters.Values['database']);
-  OlfeiDB.SQLConnection.LoginPrompt := false;
+  if not OlfeiDB.IsPool then
+  begin
+    OlfeiDB.SQLConnection.DriverName := 'SQLite';
+    OlfeiDB.SQLConnection.Params.Values['DriverID'] := 'SQLite';
+    OlfeiDB.SQLConnection.Params.Values['Database'] := PreparePath(Parameters.Values['database']);
+    OlfeiDB.SQLConnection.LoginPrompt := false;
+  end;
 end;
 
 function TOlfeiDriverSQLite.CheckTable(TableName: string): Boolean;
