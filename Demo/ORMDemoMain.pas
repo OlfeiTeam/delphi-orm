@@ -58,6 +58,7 @@ begin
   OlfeiUser := TOlfeiUser.Create(OlfeiDB);
   OlfeiUser.Find(1);
 
+  OlfeiUser.Attach();
   OlfeiUser.Avatar.LoadFromFile(ExtractFilePath(ParamStr(0)) + 'test.txt');
 
   OlfeiUser.Save;
