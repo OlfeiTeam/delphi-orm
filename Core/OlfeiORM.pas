@@ -664,6 +664,9 @@ begin
         if (Fields[i].Name <> 'created_at') and (Fields[i].Name <> '') and (Fields[i].Name <> 'updated_at') then
           Query := Query + DBConnection.Quote + Fields[i].Name + DBConnection.Quote + ' = "' + Self.FormatValueByField(i) + '",';
 
+      for i := 0 to Length(ForeignFields) - 1 do
+        Query := Query + DBConnection.Quote + ForeignFields[i].FLocalKey + DBConnection.Quote + ' = "' + Self.SLValues.Values[ForeignFields[i].FLocalKey] + '",';
+
       {for i := 0 to SLValues.Count - 1 do
         if (SLValues.Names[i] <> 'created_at') and (SLValues.Names[i] <> 'updated_at') then
           Query := Query + DBConnection.Quote + SLValues.Names[i] + DBConnection.Quote + ' = "' + Self.FormatValue(i) + '",';}
@@ -689,6 +692,12 @@ begin
           QueryFields := QueryFields + DBConnection.Quote + Fields[i].Name + DBConnection.Quote + ',';
           QueryValues := QueryValues + '"' + Self.FormatValueByField(i) + '",';
         end;
+
+      for i := 0 to Length(ForeignFields) - 1 do
+      begin
+        QueryFields := QueryFields + DBConnection.Quote + ForeignFields[i].FLocalKey + DBConnection.Quote + ',';
+        QueryValues := QueryValues + '"' + Self.SLValues.Values[ForeignFields[i].FLocalKey] + '",';
+      end;
 
       {for i := 0 to SLValues.Count - 1 do
         if (SLValues.Names[i] <> 'created_at') and (SLValues.Names[i] <> 'updated_at') then
@@ -764,9 +773,7 @@ begin
     SetLength(OlfeiForeigns, index + 1);
 
   if not Assigned(OlfeiForeigns[index]) then
-    OlfeiForeigns[index] := RttiValue.AsObject
-  else
-    Result := OlfeiForeigns[index];
+    OlfeiForeigns[index] := RttiValue.AsObject;
 
   Result := OlfeiForeigns[index];
   (Result as TOlfeiCoreORM).FieldName := ForeignFields[index].FLocalKey;
@@ -781,6 +788,9 @@ var
 begin
   if Length(OlfeiCollections) < index + 1 then
     SetLength(OlfeiCollections, index + 1);
+
+  if Assigned(OlfeiCollections[index]) then
+    FreeAndNil(OlfeiCollections[index]);
 
   if not Assigned(OlfeiCollections[index]) then
   begin
@@ -804,6 +814,9 @@ begin
   if Length(OlfeiCollections) < index + 1 then
     SetLength(OlfeiCollections, index + 1);
 
+  if Assigned(OlfeiCollections[index]) then
+    FreeAndNil(OlfeiCollections[index]);
+    
   if not Assigned(OlfeiCollections[index]) then
   begin
     LocalCollection := TOlfeiCollection<TOlfeiORM>.Create(DBConnection, T, true);
