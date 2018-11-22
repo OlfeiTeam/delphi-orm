@@ -328,13 +328,22 @@ end;
 
 procedure TOlfeiDB.BeginTransaction;
 begin
+  SQLConnection.TxOptions.AutoCommit := False;
+  SQLConnection.TxOptions.AutoStart := False;
+  SQLConnection.TxOptions.AutoStop := False;
+
   SQLConnection.StartTransaction;
 end;
 
 procedure TOlfeiDB.EndTransaction;
 begin
   SQLConnection.Commit;
+
+  SQLConnection.TxOptions.AutoCommit := True;
+  SQLConnection.TxOptions.AutoStart := True;
+  SQLConnection.TxOptions.AutoStop := True;
 end;
 
 end.
+
 
