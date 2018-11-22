@@ -55,6 +55,7 @@ type
 
       function Where(Name, Comparison, Value: String): TOlfeiCollection<T>; overload;
       function Where(Name, Value: string): TOlfeiCollection<T>; overload;
+      function Where(Name: string; Value: boolean): TOlfeiCollection<T>; overload;
       function StartGroup: TOlfeiCollection<T>;
       function StartAndGroup: TOlfeiCollection<T>;
       function StartOrGroup: TOlfeiCollection<T>;
@@ -257,6 +258,26 @@ begin
   IsPreInput := True;
 
   Result := Self;
+end;
+
+function TOlfeiCollection<T>.Where(Name: String; Value: Boolean): TOlfeiCollection<T>;
+begin
+  if not Value then
+  begin
+    Result := Self.
+      StartGroup.
+      Where(Name, '<>', '1').
+      Where(Name, '<>', '-1').
+      EndGroup;
+  end
+  else
+  begin
+    Result := Self.
+      StartGroup.
+      Where(Name, '=', '1').
+      OrWhere(Name, '=', '-1').
+      EndGroup;
+  end;
 end;
 
 function TOlfeiCollection<T>.StartAndGroup: TOlfeiCollection<T>;
