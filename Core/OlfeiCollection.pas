@@ -56,6 +56,8 @@ type
       function Where(Name, Comparison, Value: String): TOlfeiCollection<T>; overload;
       function Where(Name, Value: string): TOlfeiCollection<T>; overload;
       function Where(Name: string; Value: boolean): TOlfeiCollection<T>; overload;
+      function WhereRaw(Expression: string): TOlfeiCollection<T>;
+
       function StartGroup: TOlfeiCollection<T>;
       function StartAndGroup: TOlfeiCollection<T>;
       function StartOrGroup: TOlfeiCollection<T>;
@@ -74,6 +76,7 @@ type
       function Sum(Field: string): Real;
       function Min(Field: string): Real;
       function Max(Field: string): Real;
+      function Avg(Field: string): Real;
 
       procedure Truncate;
       procedure Delete;
@@ -278,6 +281,21 @@ begin
       OrWhere(Name, '=', '-1').
       EndGroup;
   end;
+end;
+
+function TOlfeiCollection<T>.WhereRaw(Expression: string): TOlfeiCollection<T>;
+begin
+  if StrPos(PChar(QueryString), PChar('WHERE')) = nil then
+    QueryString := QueryString + 'WHERE ' + Expression + ' '
+  else
+  if IsPreInput then
+    QueryString := QueryString + 'AND ' + Expression + ' '
+  else
+    QueryString := QueryString + Expression + ' ';
+
+  IsPreInput := True;
+
+  Result := Self;
 end;
 
 function TOlfeiCollection<T>.StartAndGroup: TOlfeiCollection<T>;
@@ -569,6 +587,12 @@ function TOlfeiCollection<T>.Max(Field: string): real;
 begin
   Result := FDB.GetOnce('SELECT ' + DistinctString + ' MAX(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
 
+  QueryString := '';
+end;
+
+function TOlfeiCollection<T>.Avg(Field: string): real;
+begin
+  Result := FDB.GetOnce('SELECT ' + DistinctString + ' AVG(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
   QueryString := '';
 end;
 
