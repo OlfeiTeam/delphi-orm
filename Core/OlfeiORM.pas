@@ -134,7 +134,7 @@ type
       function GetPivotCollection(index: Integer; T: TClass): TObject;
 
       function IndexToField(Index: integer): string;
-      function Isset(FID: integer): boolean;
+      function IsExist(FID: integer): boolean;
   end;
 
   TOlfeiORM = class(TOlfeiCoreORM)
@@ -667,9 +667,9 @@ begin
   Self.SLValues.Values[AObject.FieldName] := AID.ToString;
 end;
 
-function TOlfeiCoreORM.Isset(FID: Integer): boolean;
+function TOlfeiCoreORM.IsExist(FID: Integer): boolean;
 begin
-  Result := DBConnection.GetOnce('SELECT ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + FID.ToString() + ' LIMIT 1', 'integer') <> '0';
+  Result := DBConnection.GetOnce('SELECT COUNT(' + DBConnection.Quote + 'id' + DBConnection.Quote + ') as mc FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + FID.ToString() + ' LIMIT 1', 'integer') <> '0';
 end;
 
 function TOlfeiORM.GetCreated: TDateTime;
@@ -690,7 +690,7 @@ end;
 
 procedure TOlfeiCoreORM.Find(FID: Integer);
 begin
-  if Isset(FID) then
+  if IsExist(FID) then
   begin
     Self.ID := FID;
     Self.Cache;
@@ -925,7 +925,7 @@ var
 begin
   LocalCollection := TOlfeiCollection<TOlfeiORM>.Create(DBConnection, T);
 
-  RemoteID := LocalCollection.Where(Self.ForeignFields[index].FRemoteKey, Self.SLValues.Values[ForeignFields[index].FLocalKey]).First.ID;
+  RemoteID := LocalCollection.Where(Self.ForeignFields[index].FRemoteKey, Self.SLValues.Values[ForeignFields[index].FLocalKey]).First(false, false).ID;
 
   LocalCollection.Free;
 
