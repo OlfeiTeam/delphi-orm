@@ -750,6 +750,10 @@ begin
       if Fields[i].Name <> '' then
         Query := Query + DBConnection.Quote + Fields[i].Name + DBConnection.Quote + ',';
 
+    for i := 0 to Length(ForeignFields) - 1 do
+      if ForeignFields[i].FLocalKey <> '' then
+        Query := Query + DBConnection.Quote + ForeignFields[i].FLocalKey + DBConnection.Quote + ',';
+
     if Self.UseTimestamps then
       Query := Query + DBConnection.Quote + 'created_at' + DBConnection.Quote + ',' + DBConnection.Quote + 'updated_at' + DBConnection.Quote + ',';
 
@@ -766,33 +770,15 @@ begin
         if Fields[i].Name <> '' then
           SLValues.Values[Fields[i].Name] := PrepareValue(AnsiLowerCase(Fields[i].ItemType), DS.FieldByName(Fields[i].Name).AsString);
 
+      for i := 0 to Length(ForeignFields) - 1 do
+        if ForeignFields[i].FLocalKey <> '' then
+          SLValues.Values[ForeignFields[i].FLocalKey] := DS.FieldByName(ForeignFields[i].FLocalKey).AsString;
+
       if Self.UseTimestamps then
       begin
         SLValues.Values['created_at'] := PrepareValue('tdatetime', DS.FieldByName('created_at').AsString);
         SLValues.Values['updated_at'] := PrepareValue('tdatetime', DS.FieldByName('updated_at').AsString);
       end;
-
-      DS.Free;
-    end;
-
-    Query := '';
-
-    for i := 0 to Length(ForeignFields) - 1 do
-      if ForeignFields[i].FLocalKey <> '' then
-        Query := Query + DBConnection.Quote + ForeignFields[i].FLocalKey + DBConnection.Quote + ',';
-
-    if Length(Query) > 0 then
-    begin
-      SetLength(Query, Length(Query) - 1);
-
-      if (LockBeforeUpdate) and (DBConnection.Driver = 'mysql') then
-        DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString() + ' FOR UPDATE')
-      else
-        DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString());
-
-      for i := 0 to Length(ForeignFields) - 1 do
-        if ForeignFields[i].FLocalKey <> '' then
-          SLValues.Values[ForeignFields[i].FLocalKey] := DS.FieldByName(ForeignFields[i].FLocalKey).AsString;
 
       DS.Free;
     end;
