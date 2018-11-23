@@ -923,32 +923,34 @@ var
   end;
 
 begin
-  LocalCollection := TOlfeiCollection<TOlfeiORM>.Create(DBConnection, T);
-
-  RemoteID := LocalCollection.Where(Self.ForeignFields[index].FRemoteKey, Self.SLValues.Values[ForeignFields[index].FLocalKey]).First(false, false).ID;
-
-  LocalCollection.Free;
-
-  RttiContext := TRttiContext.Create;
-  RttiType := RttiContext.GetType(T);
-
-  Setlength(RttiParameters, 3);
-  RttiParameters[0] := TValue.From<TOlfeiDB>(DBConnection);
-  RttiParameters[1] := RemoteID;
-  RttiParameters[2] := True;
-
-  RttiValue := RttiType.GetMethod('Create').Invoke(RttiType.AsInstance.MetaclassType, RttiParameters);
-
-   if Length(OlfeiForeigns) < index + 1 then
+  if Length(OlfeiForeigns) < index + 1 then
     SetLength(OlfeiForeigns, index + 1);
 
   if not Assigned(OlfeiForeigns[index]) then
+  begin
+    LocalCollection := TOlfeiCollection<TOlfeiORM>.Create(DBConnection, T);
+
+    RemoteID := LocalCollection.Where(Self.ForeignFields[index].FRemoteKey, Self.SLValues.Values[ForeignFields[index].FLocalKey]).First(false, false).ID;
+
+    LocalCollection.Free;
+
+    RttiContext := TRttiContext.Create;
+    RttiType := RttiContext.GetType(T);
+
+    Setlength(RttiParameters, 3);
+    RttiParameters[0] := TValue.From<TOlfeiDB>(DBConnection);
+    RttiParameters[1] := RemoteID;
+    RttiParameters[2] := True;
+
+    RttiValue := RttiType.GetMethod('Create').Invoke(RttiType.AsInstance.MetaclassType, RttiParameters);
+
     OlfeiForeigns[index] := RttiValue.AsObject;
+    (OlfeiForeigns[index] as TOlfeiCoreORM).FieldName := ForeignFields[index].FLocalKey;
+
+    RttiContext.Free;
+  end;
 
   Result := OlfeiForeigns[index];
-  (Result as TOlfeiCoreORM).FieldName := ForeignFields[index].FLocalKey;
-
-  RttiContext.Free;
 end;
 
 function TOlfeiCoreORM.GetForeignCollection(index: Integer; T: TClass): TObject;
