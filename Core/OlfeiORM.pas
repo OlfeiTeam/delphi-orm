@@ -191,38 +191,220 @@ end;
 
 constructor TOlfeiORM.Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: Integer = 0; WithCache: boolean = true);
 var
-  Query: string;
-  DS: TFDMemTable;
+  RttiCtx: TRttiContext;
+  RttiType: TRttiType;
+  RttiProp: TRttiProperty;
+  RttiAttr: TCustomAttribute;
+
+  function CheckField(FField: string): boolean;
+  var
+    i: Integer;
+  begin
+    if Length(FFilterFields) = 0 then
+      Exit(True);
+
+    Result := false;
+    for i := 0 to Length(FFilterFields) - 1 do
+      if FField = FFilterFields[i] then
+        Result := True;
+  end;
+
 begin
-  inherited Create(FDB, FFilterFields, FID);
+  FJSONObject := TJSONObject.Create;
 
-  UseTimestamps := true;
+  RttiCtx := TRttiContext.Create;
+  RttiType := RttiCtx.GetType(Self.ClassType);
 
-  Query := Query + DBConnection.Quote + 'created_at' + DBConnection.Quote + ',' + DBConnection.Quote + 'updated_at' + DBConnection.Quote;
-  DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString());
+  for RttiAttr in RttiType.GetAttributes do
+    if RttiAttr is TOlfeiTable then
+      Table := TOlfeiTable(RttiAttr).Name;
 
-  SLValues.Values['created_at'] := PrepareValue('tdatetime', DS.FieldByName('created_at').AsString);
-  SLValues.Values['updated_at'] := PrepareValue('tdatetime', DS.FieldByName('updated_at').AsString);
+  for RttiProp in RttiType.GetProperties do
+    for RttiAttr in RttiProp.GetAttributes do
+    begin
+      if RttiAttr is TOlfeiField then
+      begin
+        if not CheckField(TOlfeiField(RttiAttr).Name) then
+          Continue;
 
-  DS.Free;
+        if Length(Fields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(Fields, (RttiProp as TRttiInstanceProperty).Index + 1);
+
+        if Fields[(RttiProp as TRttiInstanceProperty).Index].Name <> '' then
+          raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for column ' + TOlfeiField(RttiAttr).Name);
+
+        Fields[(RttiProp as TRttiInstanceProperty).Index].Name := TOlfeiField(RttiAttr).Name;
+        Fields[(RttiProp as TRttiInstanceProperty).Index].ItemType := (RttiProp as TRttiInstanceProperty).PropertyType.ToString;
+      end;
+
+      if RttiAttr is TOlfeiCollectionField then
+      begin
+        if Length(CollectionFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(CollectionFields, (RttiProp as TRttiInstanceProperty).Index + 1);
+
+        if (CollectionFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or (CollectionFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+          raise Exception.Create('Dupplicate index for ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for collection ' + TOlfeiCollectionField(RttiAttr).LocalKey);
+
+        CollectionFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiCollectionField(RttiAttr).LocalKey;
+        CollectionFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey := TOlfeiCollectionField(RttiAttr).RemoteKey;
+      end;
+
+      if RttiAttr is TOlfeiBlobField then
+      begin
+        if not CheckField(TOlfeiBlobField(RttiAttr).Name) then
+          Continue;
+
+        if Length(BlobFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(BlobFields, (RttiProp as TRttiInstanceProperty).Index + 1);
+
+        if BlobFields[(RttiProp as TRttiInstanceProperty).Index].Name <> '' then
+          raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for column ' + TOlfeiBlobField(RttiAttr).Name);
+
+        BlobFields[(RttiProp as TRttiInstanceProperty).Index].Name := TOlfeiBlobField(RttiAttr).Name;
+      end;
+
+      if RttiAttr is TOlfeiPivotField then
+      begin
+        if Length(PivotFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(PivotFields, (RttiProp as TRttiInstanceProperty).Index + 1);
+
+        if (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable <> '') or
+          (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or
+          (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+          raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for pivot ' + TOlfeiPivotField(RttiAttr).LocalKey);
+
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable := TOlfeiPivotField(RttiAttr).Table;
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiPivotField(RttiAttr).LocalKey;
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey := TOlfeiPivotField(RttiAttr).RemoteKey;
+      end;
+
+      if RttiAttr is TOlfeiForeignField then
+      begin
+        if Length(ForeignFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(ForeignFields, (RttiProp as TRttiInstanceProperty).Index + 1);
+
+        if (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or
+          (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+          raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for foreign ' + TOlfeiForeignField(RttiAttr).LocalKey);
+
+        ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiForeignField(RttiAttr).LocalKey;
+        ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey := TOlfeiForeignField(RttiAttr).RemoteKey;
+      end;
+    end;
+
+  RttiCtx.Free;
+
+  UseTimestamps := True;
+  DBConnection := FDB;
+
+  SLValues := TStringList.Create;
+
+  //if Isset(FID) then
+  //begin
+  ID := FID;
+
+  if WithCache then
+    Cache;
+  //end;
 end;
 
 constructor TOlfeiORM.Create(FDB: TOlfeiDB; FID: Integer = 0; WithCache: boolean = true);
 var
-  Query: string;
-  DS: TFDMemTable;
+  RttiCtx: TRttiContext;
+  RttiType: TRttiType;
+  RttiProp: TRttiProperty;
+  RttiAttr: TCustomAttribute;
 begin
-  inherited Create(FDB, FID, WithCache);
+  FJSONObject := TJSONObject.Create;
 
-  UseTimestamps := true;
+  RttiCtx := TRttiContext.Create;
+  RttiType := RttiCtx.GetType(Self.ClassType);
 
-  Query := Query + DBConnection.Quote + 'created_at' + DBConnection.Quote + ',' + DBConnection.Quote + 'updated_at' + DBConnection.Quote;
-  DS := DBConnection.GetSQL('SELECT ' + Query + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString());
+  for RttiAttr in RttiType.GetAttributes do
+    if RttiAttr is TOlfeiTable then
+      Table := TOlfeiTable(RttiAttr).Name;
 
-  SLValues.Values['created_at'] := PrepareValue('tdatetime', DS.FieldByName('created_at').AsString);
-  SLValues.Values['updated_at'] := PrepareValue('tdatetime', DS.FieldByName('updated_at').AsString);
+  for RttiProp in RttiType.GetProperties do
+    for RttiAttr in RttiProp.GetAttributes do
+    begin
+      if RttiAttr is TOlfeiField then
+      begin
+        if Length(Fields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(Fields, (RttiProp as TRttiInstanceProperty).Index + 1);
 
-  DS.Free;
+        if Fields[(RttiProp as TRttiInstanceProperty).Index].Name <> '' then
+          raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for column ' + TOlfeiField(RttiAttr).Name);
+
+        Fields[(RttiProp as TRttiInstanceProperty).Index].Name := TOlfeiField(RttiAttr).Name;
+        Fields[(RttiProp as TRttiInstanceProperty).Index].ItemType := (RttiProp as TRttiInstanceProperty).PropertyType.ToString;
+      end;
+
+      if RttiAttr is TOlfeiCollectionField then
+      begin
+        if Length(CollectionFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(CollectionFields, (RttiProp as TRttiInstanceProperty).Index + 1);
+
+        if (CollectionFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or (CollectionFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+          raise Exception.Create('Dupplicate index for ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for collection ' + TOlfeiCollectionField(RttiAttr).LocalKey);
+
+        CollectionFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiCollectionField(RttiAttr).LocalKey;
+        CollectionFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey := TOlfeiCollectionField(RttiAttr).RemoteKey;
+      end;
+
+      if RttiAttr is TOlfeiBlobField then
+      begin
+        if Length(BlobFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(BlobFields, (RttiProp as TRttiInstanceProperty).Index + 1);
+
+        if BlobFields[(RttiProp as TRttiInstanceProperty).Index].Name <> '' then
+          raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for column ' + TOlfeiBlobField(RttiAttr).Name);
+
+        BlobFields[(RttiProp as TRttiInstanceProperty).Index].Name := TOlfeiBlobField(RttiAttr).Name;
+      end;
+
+      if RttiAttr is TOlfeiPivotField then
+      begin
+        if Length(PivotFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(PivotFields, (RttiProp as TRttiInstanceProperty).Index + 1);
+
+        if (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable <> '') or
+          (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or
+          (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+          raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for pivot ' + TOlfeiPivotField(RttiAttr).LocalKey);
+
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable := TOlfeiPivotField(RttiAttr).Table;
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiPivotField(RttiAttr).LocalKey;
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey := TOlfeiPivotField(RttiAttr).RemoteKey;
+      end;
+
+      if RttiAttr is TOlfeiForeignField then
+      begin
+        if Length(ForeignFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
+          SetLength(ForeignFields, (RttiProp as TRttiInstanceProperty).Index + 1);
+
+        if (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or
+          (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+          raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for foreign ' + TOlfeiForeignField(RttiAttr).LocalKey);
+
+        ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiForeignField(RttiAttr).LocalKey;
+        ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey := TOlfeiForeignField(RttiAttr).RemoteKey;
+      end;
+    end;
+
+  RttiCtx.Free;
+
+  UseTimestamps := True;
+  DBConnection := FDB;
+
+  SLValues := TStringList.Create;
+
+  //if Isset(FID) then
+  //begin
+  ID := FID;
+
+  if WithCache then
+    Cache;
+  //end;
 end;
 
 constructor TOlfeiCoreORM.Create(FDB: TOlfeiDB; FID: Integer = 0; WithCache: boolean = true);
@@ -315,13 +497,13 @@ begin
 
   SLValues := TStringList.Create;
 
-  if Isset(FID) then
-  begin
-    ID := FID;
+  //if Isset(FID) then
+  //begin
+  ID := FID;
 
-    if WithCache then
-      Cache;
-  end;
+  if WithCache then
+    Cache;
+  //end;
 end;
 
 constructor TOlfeiCoreORM.Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: Integer = 0; WithCache: boolean = true);
@@ -434,11 +616,13 @@ begin
 
   SLValues := TStringList.Create;
 
-  if Isset(FID) then
-  begin
-    ID := FID;
+  //if Isset(FID) then
+  //begin
+  ID := FID;
+
+  if WithCache then
     Cache;
-  end;
+  //end;
 end;
 
 destructor TOlfeiCoreORM.Destroy;
