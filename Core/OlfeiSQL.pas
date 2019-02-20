@@ -53,6 +53,7 @@ type
     procedure RunSQL(SQL: string);
     procedure BeginTransaction;
     procedure EndTransaction;
+    procedure RollbackTransaction;
     procedure Connect;
     procedure Migrate;
 
@@ -344,6 +345,17 @@ begin
   SQLConnection.TxOptions.AutoStop := True;
 end;
 
+procedure TOlfeiDB.RollbackTransaction;
+begin
+  SQLConnection.Rollback;
+
+  SQLConnection.TxOptions.AutoCommit := True;
+  SQLConnection.TxOptions.AutoStart := True;
+  SQLConnection.TxOptions.AutoStop := True;
+end;
+
 end.
+
+
 
 
