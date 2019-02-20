@@ -123,6 +123,8 @@ type
       procedure SetFloat(Index: integer; Value: Real);
       function GetString(Index: integer): String;
       procedure SetString(Index: integer; Value: String);
+      function GetJSON(Index: Integer): TJSONObject;
+      procedure SetJSON(Index: integer; Value: TJSONObject);
       function GetDateTime(index: Integer): TDateTime;
       procedure SetDateTime(Index: integer; Value: TDateTime);
       function GetDate(index: Integer): TDate;
@@ -1025,6 +1027,19 @@ begin
   end;
 
   Result := (BlobValues[index] as TStringStream);
+end;
+
+function TOlfeiCoreORM.GetJSON(Index: Integer): TJSONObject;
+begin
+  Result := TJSONObject.Create;
+
+  if (SLValues.IndexOfName(IndexToField(Index)) <> -1) and (SLValues.Values[IndexToField(Index)] <> '') then
+    Result.Parse(BytesOf(SLValues.Values[IndexToField(Index)]), 0);
+end;
+
+procedure TOlfeiCoreORM.SetJSON(Index: integer; Value: TJSONObject);
+begin
+  SLValues.Values[IndexToField(Index)] := Value.ToJSON;
 end;
 
 function TOlfeiCoreORM.GetDate(index: Integer): TDate;
