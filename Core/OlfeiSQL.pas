@@ -91,7 +91,8 @@ function TOlfeiDB.Quoted(val: string): string;
 begin
   Result := StringReplace(trim(val), #39, #39#39, [rfReplaceAll, rfIgnoreCase]);
   Result := StringReplace(trim(Result), #34, #34#34, [rfReplaceAll, rfIgnoreCase]);
-  Result := StringReplace(Trim(Result), '!', '', [rfReplaceAll, rfIgnoreCase]);
+  Result := StringReplace(trim(Result), '!', '', [rfReplaceAll, rfIgnoreCase]);
+  Result := StringReplace(trim(Result), '\', '\\', [rfReplaceAll, rfIgnoreCase]);
 
   if Result = ' ' then
     Result := '';
