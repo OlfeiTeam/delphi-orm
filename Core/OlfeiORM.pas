@@ -76,7 +76,7 @@ type
   TOlfeiCoreORM = class
     private
       SLValues: TStringList;
-      BlobValues, OlfeiCollections, OlfeiForeigns: array of TObject;
+      JSONValues, BlobValues, OlfeiCollections, OlfeiForeigns: array of TObject;
       FFieldName: string;
 
       function PackFloat(Value: string): string;
@@ -124,7 +124,6 @@ type
       function GetString(Index: integer): String;
       procedure SetString(Index: integer; Value: String);
       function GetJSON(Index: Integer): TJSONObject;
-      procedure SetJSON(Index: integer; Value: TJSONObject);
       function GetDateTime(index: Integer): TDateTime;
       procedure SetDateTime(Index: integer; Value: TDateTime);
       function GetDate(index: Integer): TDate;
@@ -640,6 +639,10 @@ begin
     if Assigned(BlobValues[i]) then
       BlobValues[i].Free;
 
+  for i := Length(JSONValues) - 1 downto 0 do
+    if Assigned(JSONValues[i]) then
+      JSONValues[i].Free;
+
   for i := Length(OlfeiCollections) - 1 downto 0 do
     if Assigned(OlfeiCollections[i]) then
       OlfeiCollections[i].Free;
@@ -814,6 +817,11 @@ begin
   begin
     if Self.SLValues.IndexOfName(Fields[Index].Name) <> -1 then
       Exit(FormatDateTime('yyyy-mm-dd', StrToDate(Self.SLValues.Values[Fields[Index].Name])))
+  end
+  else if AnsiLowerCase(Fields[Index].ItemType) = 'tjsonobject' then
+  begin
+    if Assigned(JSONValues[Index]) then
+      Exit(DBConnection.Quoted((JSONValues[Index] as TJSONObject).ToJSON));
   end;
 
   Exit(Self.SLValues.Values[Fields[Index].Name]);
@@ -1020,9 +1028,11 @@ end;
 
 function TOlfeiCoreORM.GetBlob(index: Integer): TStringStream;
 begin
-  if Length(BlobValues) < index + 1 then
+  if (Length(BlobValues) < index + 1) then
   begin
-    SetLength(BlobValues, index + 1);
+    if Length(BlobValues) < index + 1 then
+      SetLength(BlobValues, index + 1);
+
     BlobValues[index] := TStringStream.Create(Self.DBConnection.GetOnce('SELECT ' + Self.BlobFields[index].Name + ' FROM ' + DBConnection.Quote + Self.Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + Self.ID.ToString(), 'string'));
   end;
 
@@ -1031,15 +1041,16 @@ end;
 
 function TOlfeiCoreORM.GetJSON(Index: Integer): TJSONObject;
 begin
-  Result := TJSONObject.Create;
+  if (Length(JSONValues) < index + 1) then
+  begin
+    if Length(JSONValues) < index + 1 then
+      SetLength(JSONValues, index + 1);
 
-  if (SLValues.IndexOfName(IndexToField(Index)) <> -1) and (SLValues.Values[IndexToField(Index)] <> '') then
-    Result.Parse(BytesOf(SLValues.Values[IndexToField(Index)]), 0);
-end;
+    JSONValues[index] := TJSONObject.Create;
+    (JSONValues[index] as TJSONObject).Parse(BytesOf(SLValues.Values[IndexToField(Index)]), 0);
+  end;
 
-procedure TOlfeiCoreORM.SetJSON(Index: integer; Value: TJSONObject);
-begin
-  SLValues.Values[IndexToField(Index)] := Value.ToJSON;
+  Result := (JSONValues[index] as TJSONObject);
 end;
 
 function TOlfeiCoreORM.GetDate(index: Integer): TDate;

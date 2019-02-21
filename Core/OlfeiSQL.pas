@@ -7,7 +7,7 @@ uses Classes, Sysutils,
   FireDAC.Stan.Option, FireDAC.Stan.Error, FireDAC.UI.Intf, FireDAC.Phys.Intf,
   FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys,
   FireDAC.Comp.Client, FireDAC.Phys.SQLite, FireDAC.DApt, Data.DB,
-  System.IniFiles, System.Threading, System.IOUtils
+  System.IniFiles, System.Threading, System.IOUtils, JSON
 
   {$IFDEF MSWINDOWS}
     ,FireDAC.Phys.MySQL
