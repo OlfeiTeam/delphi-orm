@@ -26,7 +26,7 @@ begin
       SL.Values['migration'] := ExtractFilePath(ParamStr(0)) + 'Migrations';
 
     SLFiles := TStringList.Create;
-    if FindFirst(SL.Values['migration'] + '\migration_*.*', faAnyFile, searchResult) = 0 then
+    if FindFirst(SL.Values['migration'] + '\migration_*.pas', faAnyFile, searchResult) = 0 then
     begin
       repeat
         SLFiles.Add(StringReplace(SearchResult.Name, '.pas', '', []) + ',');
