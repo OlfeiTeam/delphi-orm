@@ -2,14 +2,15 @@ unit OlfeiORM;
 
 interface
 
-uses OlfeiSQL, System.SysUtils, System.Classes, FireDac.Comp.Client,
-  System.DateUtils, System.Rtti, System.UITypes, System.JSON;
+uses
+  OlfeiSQL, System.SysUtils, System.Classes, FireDac.Comp.Client, System.DateUtils,
+  System.Rtti, System.UITypes, System.JSON;
 
 type
   TOlfeiFilterFields = array of string;
 
   TOlfeiPivotItem = record
-    FTable, FLocalKey, FRemoteKey: string;
+    FTable, FLocalKey, FRemoteKey, FLocalValue, FRemoteValue: string;
   end;
 
   TOlfeiForeignItem = record
@@ -17,138 +18,130 @@ type
   end;
 
   TOlfeiPivotItems = array of TOlfeiPivotItem;
+
   TOlfeiForeignItems = array of TOlfeiForeignItem;
 
   TOlfeiField = class(TCustomAttribute)
-    private
-      FName: String;
-    public
-      property Name: string read FName;
-      constructor Create(AName: string);
+  private
+    FName: string;
+  public
+    property Name: string read FName;
+    constructor Create(AName: string);
   end;
 
   TOlfeiForeignField = class(TCustomAttribute)
-    private
-      FLocalKey, FRemoteKey: String;
-    public
-      property LocalKey: string read FLocalKey;
-      property RemoteKey: string read FRemoteKey;
-
-      constructor Create(ALocalKey, ARemoteKey: string);
+  private
+    FLocalKey, FRemoteKey: string;
+  public
+    property LocalKey: string read FLocalKey;
+    property RemoteKey: string read FRemoteKey;
+    constructor Create(ALocalKey, ARemoteKey: string);
   end;
 
   TOlfeiTable = class(TCustomAttribute)
-    private
-      FName: String;
-    public
-      property Name: string read FName;
-      constructor Create(AName: string);
+  private
+    FName: string;
+  public
+    property Name: string read FName;
+    constructor Create(AName: string);
   end;
 
   TOlfeiPivotField = class(TCustomAttribute)
-    private
-      FTable, FLocalKey, FRemoteKey: string;
-    public
-      property Table: string read FTable;
-      property LocalKey: string read FLocalKey;
-      property RemoteKey: string read FRemoteKey;
-      constructor Create(ATable, ALocalKey, ARemoteKey: string);
+  private
+    FTable, FLocalKey, FRemoteKey, FLocalValue, FRemoteValue: string;
+  public
+    property Table: string read FTable;
+    property LocalKey: string read FLocalKey;
+    property RemoteKey: string read FRemoteKey;
+    property LocalValue: string read FLocalValue;
+    property RemoteValue: string read FRemoteValue;
+    constructor Create(ATable, ALocalKey, ALocalValue, ARemoteKey, ARemoteValue: string);
   end;
 
   TOlfeiCollectionField = class(TCustomAttribute)
-    private
-      FLocalKey, FRemoteKey: String;
-    public
-      property LocalKey: string read FLocalKey;
-      property RemoteKey: string read FRemoteKey;
-
-      constructor Create(ALocalKey, ARemoteKey: string);
+  private
+    FLocalKey, FRemoteKey: string;
+  public
+    property LocalKey: string read FLocalKey;
+    property RemoteKey: string read FRemoteKey;
+    constructor Create(ALocalKey, ARemoteKey: string);
   end;
 
   TOlfeiBlobField = class(TCustomAttribute)
-    private
-      FName: String;
-    public
-      property Name: string read FName;
-      constructor Create(AName: string);
+  private
+    FName: string;
+  public
+    property Name: string read FName;
+    constructor Create(AName: string);
   end;
 
   TOlfeiCoreORM = class
-    private
-      SLValues: TStringList;
-      JSONValues, BlobValues, OlfeiCollections, OlfeiForeigns: array of TObject;
-      FFieldName: string;
-
-      function PackFloat(Value: string): string;
-      function UnpackFloat(Value: string): string;
-      function OlfeiBoolToStr(Fl: Boolean): Integer;
-      function OlfeiStrToBool(Fl: String): Boolean;
-
-      function PrepareValue(ValueType, Value: string): string;
+  private
+    SLValues: TStringList;
+    JSONValues, BlobValues, OlfeiCollections, OlfeiForeigns: array of TObject;
+    FFieldName: string;
+    function PackFloat(Value: string): string;
+    function UnpackFloat(Value: string): string;
+    function OlfeiBoolToStr(Fl: Boolean): Integer;
+    function OlfeiStrToBool(Fl: string): Boolean;
+    function PrepareValue(ValueType, Value: string): string;
       //function FormatValue(Index: Integer): string;
-      function FormatValueByField(Index: Integer): string;
-    public
-      ID: integer;
-      Table: string;
-
-      constructor Create(FDB: TOlfeiDB; FID: integer = 0; WithCache: boolean = true); overload;
-      constructor Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: integer = 0; WithCache: Boolean = true); overload;
-
-      destructor Destroy; override;
-
-      function Exists: Boolean;
-      procedure Delete;
-      procedure Save;
-      procedure Find(FID: Integer);
-      procedure Cache(LockBeforeUpdate: Boolean = false);
-      procedure Attach(AObject: TOlfeiCoreORM; AID: integer);
-      function ToJSON: TJSONObject;
-
-      property FieldName: string read FFieldName write FFieldName;
-    protected
-      Fields, BlobFields: TOlfeiStrings;
-      PivotFields, CollectionFields: TOlfeiPivotItems;
-      ForeignFields: TOlfeiForeignItems;
-      DBConnection: TOlfeiDB;
-      UseTimestamps: boolean;
-      FJSONObject: TJSONObject;
-
-      function GetColor(index: Integer): TAlphaColor;
-      procedure SetColor(Index: integer; Value: TAlphaColor);
-      function GetBoolean(index: Integer): Boolean;
-      procedure SetBoolean(Index: integer; Value: Boolean);
-      function GetInteger(index: Integer): Integer;
-      procedure SetInteger(Index: integer; Value: Integer);
-      function GetFloat(index: Integer): Real;
-      procedure SetFloat(Index: integer; Value: Real);
-      function GetString(Index: integer): String;
-      procedure SetString(Index: integer; Value: String);
-      function GetJSON(Index: Integer): TJSONObject;
-      function GetDateTime(index: Integer): TDateTime;
-      procedure SetDateTime(Index: integer; Value: TDateTime);
-      function GetDate(index: Integer): TDate;
-      procedure SetDate(Index: integer; Value: TDate);
-      function GetBlob(index: Integer): TStringStream;
-
-      function GetForeignObject(index: Integer; T: TClass): TObject;
-      function GetForeignCollection(index: Integer; T: TClass): TObject;
-      function GetPivotCollection(index: Integer; T: TClass): TObject;
-
-      function IndexToField(Index: integer): string;
-      function IsExist(FID: integer): boolean;
+    function FormatValueByField(Index: Integer): string;
+  public
+    ID: integer;
+    Table: string;
+    constructor Create(FDB: TOlfeiDB; FID: integer = 0; WithCache: boolean = true); overload;
+    constructor Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: integer = 0; WithCache: Boolean = true); overload;
+    destructor Destroy; override;
+    function Exists: Boolean;
+    procedure Delete;
+    procedure Save;
+    procedure Find(FID: Integer);
+    procedure Cache(LockBeforeUpdate: Boolean = false);
+    procedure Attach(AObject: TOlfeiCoreORM; AID: integer); overload;
+    procedure Attach(AObject: TObject; ARemoteKey: string); overload;
+    procedure Dettach(AObject: TObject; ARemoteKey: string = '');
+    function ToJSON: TJSONObject;
+    property FieldName: string read FFieldName write FFieldName;
+  protected
+    Fields, BlobFields: TOlfeiStrings;
+    PivotFields, CollectionFields: TOlfeiPivotItems;
+    ForeignFields: TOlfeiForeignItems;
+    DBConnection: TOlfeiDB;
+    UseTimestamps: boolean;
+    FJSONObject: TJSONObject;
+    function GetColor(index: Integer): TAlphaColor;
+    procedure SetColor(Index: integer; Value: TAlphaColor);
+    function GetBoolean(index: Integer): Boolean;
+    procedure SetBoolean(Index: integer; Value: Boolean);
+    function GetInteger(index: Integer): Integer;
+    procedure SetInteger(Index: integer; Value: Integer);
+    function GetFloat(index: Integer): Real;
+    procedure SetFloat(Index: integer; Value: Real);
+    function GetString(Index: integer): string;
+    procedure SetString(Index: integer; Value: string);
+    function GetJSON(Index: Integer): TJSONObject;
+    function GetDateTime(index: Integer): TDateTime;
+    procedure SetDateTime(Index: integer; Value: TDateTime);
+    function GetDate(index: Integer): TDate;
+    procedure SetDate(Index: integer; Value: TDate);
+    function GetBlob(index: Integer): TStringStream;
+    function GetForeignObject(index: Integer; T: TClass): TObject;
+    function GetForeignCollection(index: Integer; T: TClass): TObject;
+    function GetPivotCollection(index: Integer; T: TClass): TObject;
+    function IndexToField(Index: integer): string;
+    function IsExist(FID: integer): boolean;
   end;
 
   TOlfeiORM = class(TOlfeiCoreORM)
-    private
-      function GetCreated: TDateTime;
-      function GetUpdated: TDateTime;
-
-    public
-      property Created: TDateTime read GetCreated;
-      property Updated: TDateTime read GetUpdated;
-
-      constructor Create(FDB: TOlfeiDB; FID: integer = 0; WithCache: boolean = true); overload;
-      constructor Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: integer = 0; WithCache: boolean = true); overload;
+  private
+    function GetCreated: TDateTime;
+    function GetUpdated: TDateTime;
+  public
+    property Created: TDateTime read GetCreated;
+    property Updated: TDateTime read GetUpdated;
+    constructor Create(FDB: TOlfeiDB; FID: integer = 0; WithCache: boolean = true); overload;
+    constructor Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: integer = 0; WithCache: boolean = true); overload;
   end;
 
 implementation
@@ -183,11 +176,13 @@ begin
   FRemoteKey := ARemoteKey;
 end;
 
-constructor TOlfeiPivotField.Create(ATable: string; ALocalKey: string; ARemoteKey: string);
+constructor TOlfeiPivotField.Create(ATable, ALocalKey, ALocalValue, ARemoteKey, ARemoteValue: string);
 begin
   FTable := ATable;
   FLocalKey := ALocalKey;
   FRemoteKey := ARemoteKey;
+  FLocalValue := ALocalValue;
+  FRemoteValue := ARemoteValue;
 end;
 
 constructor TOlfeiORM.Create(FDB: TOlfeiDB; const FFilterFields: TOlfeiFilterFields; FID: Integer = 0; WithCache: boolean = true);
@@ -269,14 +264,14 @@ begin
         if Length(PivotFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
           SetLength(PivotFields, (RttiProp as TRttiInstanceProperty).Index + 1);
 
-        if (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable <> '') or
-          (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or
-          (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+        if (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable <> '') or (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
           raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for pivot ' + TOlfeiPivotField(RttiAttr).LocalKey);
 
         PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable := TOlfeiPivotField(RttiAttr).Table;
         PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiPivotField(RttiAttr).LocalKey;
         PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey := TOlfeiPivotField(RttiAttr).RemoteKey;
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalValue := TOlfeiPivotField(RttiAttr).LocalValue;
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteValue := TOlfeiPivotField(RttiAttr).RemoteValue;
       end;
 
       if RttiAttr is TOlfeiForeignField then
@@ -284,8 +279,7 @@ begin
         if Length(ForeignFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
           SetLength(ForeignFields, (RttiProp as TRttiInstanceProperty).Index + 1);
 
-        if (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or
-          (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+        if (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
           raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for foreign ' + TOlfeiForeignField(RttiAttr).LocalKey);
 
         ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiForeignField(RttiAttr).LocalKey;
@@ -368,14 +362,14 @@ begin
         if Length(PivotFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
           SetLength(PivotFields, (RttiProp as TRttiInstanceProperty).Index + 1);
 
-        if (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable <> '') or
-          (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or
-          (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+        if (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable <> '') or (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
           raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for pivot ' + TOlfeiPivotField(RttiAttr).LocalKey);
 
         PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable := TOlfeiPivotField(RttiAttr).Table;
         PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiPivotField(RttiAttr).LocalKey;
         PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey := TOlfeiPivotField(RttiAttr).RemoteKey;
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalValue := TOlfeiPivotField(RttiAttr).LocalValue;
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteValue := TOlfeiPivotField(RttiAttr).RemoteValue;
       end;
 
       if RttiAttr is TOlfeiForeignField then
@@ -383,8 +377,7 @@ begin
         if Length(ForeignFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
           SetLength(ForeignFields, (RttiProp as TRttiInstanceProperty).Index + 1);
 
-        if (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or
-          (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+        if (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
           raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for foreign ' + TOlfeiForeignField(RttiAttr).LocalKey);
 
         ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiForeignField(RttiAttr).LocalKey;
@@ -467,14 +460,14 @@ begin
         if Length(PivotFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
           SetLength(PivotFields, (RttiProp as TRttiInstanceProperty).Index + 1);
 
-        if (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable <> '') or
-          (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or
-          (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+        if (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable <> '') or (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
           raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for pivot ' + TOlfeiPivotField(RttiAttr).LocalKey);
 
         PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable := TOlfeiPivotField(RttiAttr).Table;
         PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiPivotField(RttiAttr).LocalKey;
         PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey := TOlfeiPivotField(RttiAttr).RemoteKey;
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalValue := TOlfeiPivotField(RttiAttr).LocalValue;
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteValue := TOlfeiPivotField(RttiAttr).RemoteValue;
       end;
 
       if RttiAttr is TOlfeiForeignField then
@@ -482,8 +475,7 @@ begin
         if Length(ForeignFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
           SetLength(ForeignFields, (RttiProp as TRttiInstanceProperty).Index + 1);
 
-        if (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or
-          (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+        if (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
           raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for foreign ' + TOlfeiForeignField(RttiAttr).LocalKey);
 
         ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiForeignField(RttiAttr).LocalKey;
@@ -586,14 +578,14 @@ begin
         if Length(PivotFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
           SetLength(PivotFields, (RttiProp as TRttiInstanceProperty).Index + 1);
 
-        if (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable <> '') or
-          (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or
-          (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+        if (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable <> '') or (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or (PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
           raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for pivot ' + TOlfeiPivotField(RttiAttr).LocalKey);
 
         PivotFields[(RttiProp as TRttiInstanceProperty).Index].FTable := TOlfeiPivotField(RttiAttr).Table;
         PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiPivotField(RttiAttr).LocalKey;
         PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey := TOlfeiPivotField(RttiAttr).RemoteKey;
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FLocalValue := TOlfeiPivotField(RttiAttr).LocalValue;
+        PivotFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteValue := TOlfeiPivotField(RttiAttr).RemoteValue;
       end;
 
       if RttiAttr is TOlfeiForeignField then
@@ -601,8 +593,7 @@ begin
         if Length(ForeignFields) < (RttiProp as TRttiInstanceProperty).Index + 1 then
           SetLength(ForeignFields, (RttiProp as TRttiInstanceProperty).Index + 1);
 
-        if (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or
-          (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
+        if (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey <> '') or (ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FRemoteKey <> '') then
           raise Exception.Create('Dupplicate index ' + (RttiProp as TRttiInstanceProperty).Index.ToString + ' for foreign ' + TOlfeiForeignField(RttiAttr).LocalKey);
 
         ForeignFields[(RttiProp as TRttiInstanceProperty).Index].FLocalKey := TOlfeiForeignField(RttiAttr).LocalKey;
@@ -630,7 +621,7 @@ destructor TOlfeiCoreORM.Destroy;
 var
   i: integer;
 begin
-   if Assigned(FJSONObject) then
+  if Assigned(FJSONObject) then
     FJSONObject.Free;
 
   SLValues.Free;
@@ -670,6 +661,46 @@ begin
     raise Exception.Create('Trying attach to not foreign field');
 
   Self.SLValues.Values[AObject.FieldName] := AID.ToString;
+end;
+
+procedure TOlfeiCoreORM.Attach(AObject: TObject; ARemoteKey: string);
+var
+  i: Integer;
+begin
+  if TOlfeiCollection<TOlfeiORM>(AObject).RemoteTable = '' then
+    raise Exception.Create('Trying attach for not pivot field');
+
+  for i := 0 to Length(PivotFields) - 1 do
+    if PivotFields[i].FTable = TOlfeiCollection<TOlfeiORM>(AObject).RemoteTable then
+    begin
+      DBConnection.RunSQL('INSERT INTO ' + DBConnection.Quote + PivotFields[i].FTable + DBConnection.Quote + ' (' + DBConnection.Quote + PivotFields[i].FLocalKey + DBConnection.Quote + ', ' + DBConnection.Quote + PivotFields[i].FRemoteKey + DBConnection.Quote + ') VALUE ("' + SLValues.Values[PivotFields[i].FLocalValue] + '", "' + ARemoteKey + '")');
+
+      break;
+    end;
+end;
+
+procedure TOlfeiCoreORM.Dettach(AObject: TObject; ARemoteKey: string = '');
+var
+  i: Integer;
+begin
+  if TOlfeiCollection<TOlfeiORM>(AObject).RemoteTable = '' then
+    raise Exception.Create('Trying dettach for not pivot field');
+
+  for i := 0 to Length(PivotFields) - 1 do
+    if PivotFields[i].FTable = TOlfeiCollection<TOlfeiORM>(AObject).RemoteTable then
+    begin
+      if ARemoteKey = '' then
+        TOlfeiCollection<TOlfeiORM>(AObject)
+          .Where(PivotFields[i].FLocalKey, SLValues.Values[PivotFields[i].FLocalValue])
+          .Delete
+      else
+        TOlfeiCollection<TOlfeiORM>(AObject)
+          .Where(PivotFields[i].FLocalKey, SLValues.Values[PivotFields[i].FLocalValue])
+          .Where(PivotFields[i].FRemoteKey, ARemoteKey)
+          .Delete;
+
+      break;
+    end;
 end;
 
 function TOlfeiCoreORM.IsExist(FID: Integer): boolean;
@@ -714,7 +745,7 @@ function TOlfeiCoreORM.OlfeiStrToBool(Fl: string): boolean;
 begin
   Result := False;
 
-  if (AnsiLowerCase(Fl) = 'true') or (fl = '-1') or (fl = '1') then
+  if (AnsiLowerCase(Fl) = 'true') or (Fl = '-1') or (Fl = '1') then
     Result := True;
 end;
 
@@ -977,7 +1008,7 @@ begin
   if not Assigned(OlfeiCollections[index]) then
   begin
     LocalCollection := TOlfeiCollection<TOlfeiORM>.Create(DBConnection, T);
-   
+
     if AnsiLowerCase(CollectionFields[index].FLocalKey) = AnsiLowerCase('id') then
       Key := Self.ID.ToString()
     else
@@ -998,7 +1029,7 @@ begin
 
   if Assigned(OlfeiCollections[index]) then
     FreeAndNil(OlfeiCollections[index]);
-    
+
   if not Assigned(OlfeiCollections[index]) then
   begin
     LocalCollection := TOlfeiCollection<TOlfeiORM>.Create(DBConnection, T, true);
@@ -1006,8 +1037,10 @@ begin
     LocalCollection.RemoteKey := PivotFields[index].FRemoteKey;
     LocalCollection.RemoteTable := PivotFields[index].FTable;
     LocalCollection.LocalKey := PivotFields[index].FLocalKey;
+    LocalCollection.RemoteValue := PivotFields[index].FRemoteValue;
 
-    OlfeiCollections[index] := LocalCollection.WhereFor(PivotFields[index].FTable, PivotFields[index].FLocalKey, '=', Self.ID.ToString());
+    OlfeiCollections[index] := LocalCollection
+      .WhereFor(PivotFields[index].FTable, PivotFields[index].FLocalKey, '=', Self.SLValues.Values[PivotFields[index].FLocalValue]);
   end;
 
   Result := OlfeiCollections[index];
@@ -1015,15 +1048,15 @@ end;
 
 function TOlfeiCoreORM.GetDateTime(index: Integer): TDateTime;
 begin
-  if SLValues.IndexOfName(IndexToField(Index)) <> -1 then
-    Result := StrToDateTime(SLValues.Values[IndexToField(Index)])
+  if SLValues.IndexOfName(IndexToField(index)) <> -1 then
+    Result := StrToDateTime(SLValues.Values[IndexToField(index)])
   else
     Result := 0;
 end;
 
 procedure TOlfeiCoreORM.SetDateTime(index: Integer; Value: TDateTime);
 begin
-  SLValues.Values[IndexToField(Index)] := FormatDateTime(FormatSettings.ShortDateFormat + ' ' + FormatSettings.LongTimeFormat, Value);
+  SLValues.Values[IndexToField(index)] := FormatDateTime(FormatSettings.ShortDateFormat + ' ' + FormatSettings.LongTimeFormat, Value);
 end;
 
 function TOlfeiCoreORM.GetBlob(index: Integer): TStringStream;
@@ -1041,81 +1074,81 @@ end;
 
 function TOlfeiCoreORM.GetJSON(Index: Integer): TJSONObject;
 begin
-  if (Length(JSONValues) < index + 1) then
+  if (Length(JSONValues) < Index + 1) then
   begin
-    if Length(JSONValues) < index + 1 then
-      SetLength(JSONValues, index + 1);
+    if Length(JSONValues) < Index + 1 then
+      SetLength(JSONValues, Index + 1);
 
-    JSONValues[index] := TJSONObject.Create;
-    (JSONValues[index] as TJSONObject).Parse(BytesOf(SLValues.Values[IndexToField(Index)]), 0);
+    JSONValues[Index] := TJSONObject.Create;
+    (JSONValues[Index] as TJSONObject).Parse(BytesOf(SLValues.Values[IndexToField(Index)]), 0);
   end;
 
-  Result := (JSONValues[index] as TJSONObject);
+  Result := (JSONValues[Index] as TJSONObject);
 end;
 
 function TOlfeiCoreORM.GetDate(index: Integer): TDate;
 begin
-  if (SLValues.IndexOfName(IndexToField(Index)) <> -1) and (SLValues.Values[IndexToField(Index)] <> '') then
-    Result := StrToDate(SLValues.Values[IndexToField(Index)])
+  if (SLValues.IndexOfName(IndexToField(index)) <> -1) and (SLValues.Values[IndexToField(index)] <> '') then
+    Result := StrToDate(SLValues.Values[IndexToField(index)])
   else
     Result := 0;
 end;
 
 procedure TOlfeiCoreORM.SetDate(index: Integer; Value: TDate);
 begin
-  SLValues.Values[IndexToField(Index)] := FormatDateTime(FormatSettings.ShortDateFormat, Value);
+  SLValues.Values[IndexToField(index)] := FormatDateTime(FormatSettings.ShortDateFormat, Value);
 end;
 
 function TOlfeiCoreORM.GetBoolean(index: Integer): Boolean;
 begin
-  if SLValues.IndexOfName(IndexToField(Index)) <> -1 then
-    Result := SLValues.Values[IndexToField(Index)].ToBoolean()
+  if SLValues.IndexOfName(IndexToField(index)) <> -1 then
+    Result := SLValues.Values[IndexToField(index)].ToBoolean()
   else
     Result := False;
 end;
 
 procedure TOlfeiCoreORM.SetBoolean(index: Integer; Value: Boolean);
 begin
-  SLValues.Values[IndexToField(Index)] := OlfeiBoolToStr(Value).ToString();
+  SLValues.Values[IndexToField(index)] := OlfeiBoolToStr(Value).ToString();
 end;
 
 function TOlfeiCoreORM.GetInteger(index: Integer): Integer;
 begin
-  if SLValues.IndexOfName(IndexToField(Index)) <> -1 then
-    Result := SLValues.Values[IndexToField(Index)].ToInteger()
+  if SLValues.IndexOfName(IndexToField(index)) <> -1 then
+    Result := SLValues.Values[IndexToField(index)].ToInteger()
   else
     Result := 0;
 end;
 
 procedure TOlfeiCoreORM.SetInteger(index: Integer; Value: Integer);
 begin
-  SLValues.Values[IndexToField(Index)] := Value.ToString();
+  SLValues.Values[IndexToField(index)] := Value.ToString();
 end;
 
 function TOlfeiCoreORM.GetColor(index: Integer): TAlphaColor;
 begin
-  if SLValues.IndexOfName(IndexToField(Index)) <> -1 then
-    Result := TAlphaColor(SLValues.Values[IndexToField(Index)].ToInteger())
+  if SLValues.IndexOfName(IndexToField(index)) <> -1 then
+    Result := TAlphaColor(SLValues.Values[IndexToField(index)].ToInteger())
   else
     Result := TAlphaColor(0);
 end;
 
 procedure TOlfeiCoreORM.SetColor(index: Integer; Value: TAlphaColor);
 begin
-  SLValues.Values[IndexToField(Index)] := Integer(Value).ToString();
+  SLValues.Values[IndexToField(index)] := Integer(Value).ToString();
 end;
 
 function TOlfeiCoreORM.GetFloat(index: Integer): Real;
 begin
-  if SLValues.IndexOfName(IndexToField(Index)) <> -1 then
-    Result := UnpackFloat(SLValues.Values[IndexToField(Index)]).ToDouble()
+  if SLValues.IndexOfName(IndexToField(index)) <> -1 then
+    Result := UnpackFloat(SLValues.Values[IndexToField(index)]).ToDouble()
   else
     Result := 0;
 end;
 
 procedure TOlfeiCoreORM.SetFloat(index: Integer; Value: Real);
 begin
-   SLValues.Values[IndexToField(Index)] := PackFloat(FloatToStr(Value));
+  SLValues.Values[IndexToField(index)] := PackFloat(FloatToStr(Value));
 end;
 
 function TOlfeiCoreORM.GetString(Index: Integer): string;
@@ -1128,7 +1161,7 @@ end;
 
 procedure TOlfeiCoreORM.SetString(index: Integer; Value: string);
 begin
-  SLValues.Values[IndexToField(Index)] := PrepareValue('string', Value);
+  SLValues.Values[IndexToField(index)] := PrepareValue('string', Value);
 end;
 
 function TOlfeiCoreORM.PrepareValue(ValueType: string; Value: string): string;
@@ -1160,3 +1193,4 @@ begin
 end;
 
 end.
+

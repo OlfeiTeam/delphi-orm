@@ -39,7 +39,7 @@ type
 
       FFilterFields: TOlfeiFilterFields;
 
-      FRemoteKey, FRemoteTable, FLocalKey: string;
+      FRemoteKey, FRemoteTable, FLocalKey, FRemoteValue: string;
 
       procedure Clear;
     protected
@@ -52,6 +52,7 @@ type
       property RemoteKey: string read FRemoteKey write FRemoteKey;
       property RemoteTable: string read FRemoteTable write FRemoteTable;
       property LocalKey: string read FLocalKey write FLocalKey;
+      property RemoteValue: string read FRemoteValue write FRemoteValue;
 
       function Where(Name, Comparison, Value: String): TOlfeiCollection<T>; overload;
       function Where(Name, Value: string): TOlfeiCollection<T>; overload;
@@ -416,7 +417,7 @@ begin
     Result := 'SELECT ' + DistinctString + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + 'id' + FDB.Quote + ' FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString + OrderString + LimitString
   else
     Result := 'SELECT ' + DistinctString + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + 'id' + FDB.Quote + ' FROM ' + FDB.Quote + FTable + FDB.Quote +
-      ' JOIN ' + FDB.Quote + Self.FRemoteTable + FDB.Quote + ' ON ' + FDB.Quote + Self.FRemoteTable + FDB.Quote + '.' + FDB.Quote + Self.FRemoteKey + FDB.Quote + ' = ' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + 'id' + FDB.Quote +
+      ' JOIN ' + FDB.Quote + Self.FRemoteTable + FDB.Quote + ' ON ' + FDB.Quote + Self.FRemoteTable + FDB.Quote + '.' + FDB.Quote + Self.FRemoteKey + FDB.Quote + ' = ' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + FRemoteValue + FDB.Quote +
       ' ' + QueryString + OrderString + LimitString;
 end;
 
