@@ -5,3 +5,4 @@ AndroidManifest.template.xml
 __history
 __recovery
 *.dcu
+*.o
