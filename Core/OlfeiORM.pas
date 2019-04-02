@@ -673,7 +673,7 @@ begin
   for i := 0 to Length(PivotFields) - 1 do
     if PivotFields[i].FTable = TOlfeiCollection<TOlfeiORM>(AObject).RemoteTable then
     begin
-      DBConnection.RunSQL('INSERT INTO ' + DBConnection.Quote + PivotFields[i].FTable + DBConnection.Quote + ' (' + DBConnection.Quote + PivotFields[i].FLocalKey + DBConnection.Quote + ', ' + DBConnection.Quote + PivotFields[i].FRemoteKey + DBConnection.Quote + ') VALUE ("' + SLValues.Values[PivotFields[i].FLocalValue] + '", "' + ARemoteKey + '")');
+      DBConnection.RunSQL('INSERT INTO ' + DBConnection.Quote + PivotFields[i].FTable + DBConnection.Quote + ' (' + DBConnection.Quote + PivotFields[i].FLocalKey + DBConnection.Quote + ', ' + DBConnection.Quote + PivotFields[i].FRemoteKey + DBConnection.Quote + ') VALUES ("' + SLValues.Values[PivotFields[i].FLocalValue] + '", "' + ARemoteKey + '")');
 
       break;
     end;
@@ -690,14 +690,9 @@ begin
     if PivotFields[i].FTable = TOlfeiCollection<TOlfeiORM>(AObject).RemoteTable then
     begin
       if ARemoteKey = '' then
-        TOlfeiCollection<TOlfeiORM>(AObject)
-          .Where(PivotFields[i].FLocalKey, SLValues.Values[PivotFields[i].FLocalValue])
-          .Delete
+        DBConnection.RunSQL('DELETE FROM ' + DBConnection.Quote + PivotFields[i].FTable + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + PivotFields[i].FLocalKey + DBConnection.Quote + ' = "' + SLValues.Values[PivotFields[i].FLocalValue] + '"')
       else
-        TOlfeiCollection<TOlfeiORM>(AObject)
-          .Where(PivotFields[i].FLocalKey, SLValues.Values[PivotFields[i].FLocalValue])
-          .Where(PivotFields[i].FRemoteKey, ARemoteKey)
-          .Delete;
+        DBConnection.RunSQL('DELETE FROM ' + DBConnection.Quote + PivotFields[i].FTable + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + PivotFields[i].FLocalKey + DBConnection.Quote + ' = "' + SLValues.Values[PivotFields[i].FLocalValue] + '" AND ' + DBConnection.Quote + PivotFields[i].FRemoteKey + DBConnection.Quote + ' = "' + ARemoteKey + '"');
 
       break;
     end;
