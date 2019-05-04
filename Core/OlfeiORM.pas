@@ -748,6 +748,8 @@ function TOlfeiCoreORM.ToJSON: TJSONObject;
 var
   i: integer;
 begin
+  FJSONObject.AddPair('id', TJSONNumber.Create(Self.ID));
+
   for i := 0 to Length(Fields) - 1 do
     FJSONObject.AddPair(Fields[i].Name, SLValues.Values[Fields[i].Name]);
 
