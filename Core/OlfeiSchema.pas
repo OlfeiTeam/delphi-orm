@@ -122,6 +122,7 @@ var
 function NewTable(ATable: string): TOlfeiTableSchema;
 function UpdateTable(ATable: string): TOlfeiTableSchema;
 function PivotTable(ATable: string): TOlfeiTableSchema;
+function DropTable(ATable: string): TOlfeiTableSchema;
 
 implementation
 
