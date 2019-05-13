@@ -125,6 +125,8 @@ end;
 procedure TOlfeiDriverMySQL.DropTable(OlfeiTable: TObject);
 begin
   OlfeiDB.RunSQL('DROP TABLE ' + OlfeiDB.Quote + (OlfeiTable as TOlfeiTableSchema).Table + OlfeiDB.Quote);
+  
+  ConfirmUpdate(OlfeiTable);
 end;
 
 procedure TOlfeiDriverMySQL.ConfirmUpdate(OlfeiTable: TObject);

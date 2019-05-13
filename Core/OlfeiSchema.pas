@@ -181,10 +181,15 @@ begin
   Self.Pivot := false;
   Self.IsDrop := Drop;
 
-  if Self.IsNew then
-    Self.FMigrationName := 'create_table_' + AnsiLowerCase(ATable)
+  if Self.IsDrop then
+    Self.FMigrationName := 'drop_table_' + AnsiLowerCase(ATable)
   else
-    Self.FMigrationName := 'update_table_' + AnsiLowerCase(ATable);
+  begin
+    if Self.IsNew then
+      Self.FMigrationName := 'create_table_' + AnsiLowerCase(ATable)
+    else
+      Self.FMigrationName := 'update_table_' + AnsiLowerCase(ATable);
+  end;
 end;
 
 destructor TOlfeiTableSchema.Destroy;

@@ -197,6 +197,8 @@ end;
 procedure TOlfeiDriverSQLite.DropTable(OlfeiTable: TObject);
 begin
   OlfeiDB.RunSQL('DROP TABLE ' + OlfeiDB.Quote + (OlfeiTable as TOlfeiTableSchema).Table + OlfeiDB.Quote);
+  
+  ConfirmUpdate(OlfeiTable);
 end;
 
 procedure TOlfeiDriverSQLite.UpdateTable(OlfeiTable: TObject);
