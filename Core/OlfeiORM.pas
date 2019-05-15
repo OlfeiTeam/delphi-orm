@@ -87,6 +87,7 @@ type
     function PrepareValue(ValueType, Value: string): string;
       //function FormatValue(Index: Integer): string;
     function FormatValueByField(Index: Integer): string;
+    function GetLocalKey(Name: string): string;
   public
     ID: integer;
     Table: string;
@@ -673,7 +674,7 @@ begin
   for i := 0 to Length(PivotFields) - 1 do
     if PivotFields[i].FTable = TOlfeiCollection<TOlfeiORM>(AObject).RemoteTable then
     begin
-      DBConnection.RunSQL('INSERT INTO ' + DBConnection.Quote + PivotFields[i].FTable + DBConnection.Quote + ' (' + DBConnection.Quote + PivotFields[i].FLocalKey + DBConnection.Quote + ', ' + DBConnection.Quote + PivotFields[i].FRemoteKey + DBConnection.Quote + ') VALUES ("' + SLValues.Values[PivotFields[i].FLocalValue] + '", "' + ARemoteKey + '")');
+      DBConnection.RunSQL('INSERT INTO ' + DBConnection.Quote + PivotFields[i].FTable + DBConnection.Quote + ' (' + DBConnection.Quote + PivotFields[i].FLocalKey + DBConnection.Quote + ', ' + DBConnection.Quote + PivotFields[i].FRemoteKey + DBConnection.Quote + ') VALUES ("' + GetLocalKey(PivotFields[i].FLocalValue) + '", "' + ARemoteKey + '")');
 
       break;
     end;
@@ -690,9 +691,9 @@ begin
     if PivotFields[i].FTable = TOlfeiCollection<TOlfeiORM>(AObject).RemoteTable then
     begin
       if ARemoteKey = '' then
-        DBConnection.RunSQL('DELETE FROM ' + DBConnection.Quote + PivotFields[i].FTable + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + PivotFields[i].FLocalKey + DBConnection.Quote + ' = "' + SLValues.Values[PivotFields[i].FLocalValue] + '"')
+        DBConnection.RunSQL('DELETE FROM ' + DBConnection.Quote + PivotFields[i].FTable + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + PivotFields[i].FLocalKey + DBConnection.Quote + ' = "' + GetLocalKey(PivotFields[i].FLocalValue) + '"')
       else
-        DBConnection.RunSQL('DELETE FROM ' + DBConnection.Quote + PivotFields[i].FTable + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + PivotFields[i].FLocalKey + DBConnection.Quote + ' = "' + SLValues.Values[PivotFields[i].FLocalValue] + '" AND ' + DBConnection.Quote + PivotFields[i].FRemoteKey + DBConnection.Quote + ' = "' + ARemoteKey + '"');
+        DBConnection.RunSQL('DELETE FROM ' + DBConnection.Quote + PivotFields[i].FTable + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + PivotFields[i].FLocalKey + DBConnection.Quote + ' = "' + GetLocalKey(PivotFields[i].FLocalValue) + '" AND ' + DBConnection.Quote + PivotFields[i].FRemoteKey + DBConnection.Quote + ' = "' + ARemoteKey + '"');
 
       break;
     end;
@@ -1187,6 +1188,14 @@ begin
     DBConnection.RunSQL('DELETE FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = ' + ID.ToString());
     ID := 0;
   end;
+end;
+
+function TOlfeiCoreORM.GetLocalKey(Name: string): string;
+begin
+  if AnsiUpperCase(Name) = 'ID' then
+    Result := Self.ID.ToString
+  else
+    Result := SLValues.Values[Name];
 end;
 
 end.

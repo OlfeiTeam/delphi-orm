@@ -571,35 +571,81 @@ begin
 end;
 
 function TOlfeiCollection<T>.Count: Integer;
+var
+  SQL: string;
 begin
-  Result := FDB.GetOnce('SELECT ' + DistinctString + ' COUNT(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + 'id' + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToInteger();
+  if not Self.IsPivot then
+    SQL := 'SELECT ' + DistinctString + ' COUNT(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + 'id' + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString + OrderString + LimitString
+  else
+    SQL := 'SELECT ' + DistinctString + ' COUNT(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + 'id' + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote +
+      ' JOIN ' + FDB.Quote + Self.FRemoteTable + FDB.Quote + ' ON ' + FDB.Quote + Self.FRemoteTable + FDB.Quote + '.' + FDB.Quote + Self.FRemoteKey + FDB.Quote + ' = ' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + FRemoteValue + FDB.Quote +
+      ' ' + QueryString + OrderString + LimitString;
+
+  Result := FDB.GetOnce(SQL, 'integer').ToInteger;
 
   QueryString := '';
 end;
 
 function TOlfeiCollection<T>.Sum(Field: string): real;
+var
+  SQL: string;
 begin
-  Result := FDB.GetOnce('SELECT ' + DistinctString + ' SUM(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
+  if not Self.IsPivot then
+    SQL := 'SELECT ' + DistinctString + ' SUM(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString + OrderString + LimitString
+  else
+    SQL := 'SELECT ' + DistinctString + ' SUM(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote +
+      ' JOIN ' + FDB.Quote + Self.FRemoteTable + FDB.Quote + ' ON ' + FDB.Quote + Self.FRemoteTable + FDB.Quote + '.' + FDB.Quote + Self.FRemoteKey + FDB.Quote + ' = ' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + FRemoteValue + FDB.Quote +
+      ' ' + QueryString + OrderString + LimitString;
+
+  Result := FDB.GetOnce(SQL, 'integer').ToDouble();
 
   QueryString := '';
 end;
 
 function TOlfeiCollection<T>.Max(Field: string): real;
+var
+  SQL: string;
 begin
-  Result := FDB.GetOnce('SELECT ' + DistinctString + ' MAX(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
+  if not Self.IsPivot then
+    SQL := 'SELECT ' + DistinctString + ' MAX(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString + OrderString + LimitString
+  else
+    SQL := 'SELECT ' + DistinctString + ' MAX(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote +
+      ' JOIN ' + FDB.Quote + Self.FRemoteTable + FDB.Quote + ' ON ' + FDB.Quote + Self.FRemoteTable + FDB.Quote + '.' + FDB.Quote + Self.FRemoteKey + FDB.Quote + ' = ' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + FRemoteValue + FDB.Quote +
+      ' ' + QueryString + OrderString + LimitString;
+
+  Result := FDB.GetOnce(SQL, 'integer').ToDouble();
 
   QueryString := '';
 end;
 
 function TOlfeiCollection<T>.Avg(Field: string): real;
+var
+  SQL: string;
 begin
-  Result := FDB.GetOnce('SELECT ' + DistinctString + ' AVG(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
+  if not Self.IsPivot then
+    SQL := 'SELECT ' + DistinctString + ' AVG(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString + OrderString + LimitString
+  else
+    SQL := 'SELECT ' + DistinctString + ' AVG(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote +
+      ' JOIN ' + FDB.Quote + Self.FRemoteTable + FDB.Quote + ' ON ' + FDB.Quote + Self.FRemoteTable + FDB.Quote + '.' + FDB.Quote + Self.FRemoteKey + FDB.Quote + ' = ' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + FRemoteValue + FDB.Quote +
+      ' ' + QueryString + OrderString + LimitString;
+
+  Result := FDB.GetOnce(SQL, 'integer').ToDouble();
+
   QueryString := '';
 end;
 
 function TOlfeiCollection<T>.Min(Field: string): real;
+var
+  SQL: string;
 begin
-  Result := FDB.GetOnce('SELECT ' + DistinctString + ' MIN(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString, 'integer').ToDouble();
+  if not Self.IsPivot then
+    SQL := 'SELECT ' + DistinctString + ' MIN(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote + ' ' + QueryString + OrderString + LimitString
+  else
+    SQL := 'SELECT ' + DistinctString + ' MIN(' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ') FROM ' + FDB.Quote + FTable + FDB.Quote +
+      ' JOIN ' + FDB.Quote + Self.FRemoteTable + FDB.Quote + ' ON ' + FDB.Quote + Self.FRemoteTable + FDB.Quote + '.' + FDB.Quote + Self.FRemoteKey + FDB.Quote + ' = ' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + FRemoteValue + FDB.Quote +
+      ' ' + QueryString + OrderString + LimitString;
+
+  Result := FDB.GetOnce(SQL, 'integer').ToDouble();
 
   QueryString := '';
 end;
