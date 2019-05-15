@@ -1038,7 +1038,7 @@ begin
     LocalCollection.RemoteValue := PivotFields[index].FRemoteValue;
 
     OlfeiCollections[index] := LocalCollection
-      .WhereFor(PivotFields[index].FTable, PivotFields[index].FLocalKey, '=', Self.SLValues.Values[PivotFields[index].FLocalValue]);
+      .WhereFor(PivotFields[index].FTable, PivotFields[index].FLocalKey, '=', GetLocalKey(PivotFields[index].FLocalValue));
   end;
 
   Result := OlfeiCollections[index];
