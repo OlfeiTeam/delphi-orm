@@ -98,6 +98,7 @@ type
     procedure Delete;
     procedure Save;
     procedure Find(FID: Integer);
+    procedure FindBy(AFieldName, AFieldValue: string);
     procedure Cache(LockBeforeUpdate: Boolean = false);
     procedure Attach(AObject: TOlfeiCoreORM; AID: integer); overload;
     procedure Attach(AObject: TObject; ARemoteKey: string); overload;
@@ -722,6 +723,19 @@ end;
 
 procedure TOlfeiCoreORM.Find(FID: Integer);
 begin
+  if IsExist(FID) then
+  begin
+    Self.ID := FID;
+    Self.Cache;
+  end;
+end;
+
+procedure TOlfeiCoreORM.FindBy(AFieldName, AFieldValue: string);
+var
+  FID: integer;
+begin
+  FID := DBConnection.GetOnce('SELECT ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' FROM ' + DBConnection.Quote + Table + DBConnection.Quote + ' WHERE ' + DBConnection.Quote + AFieldName + DBConnection.Quote + ' = ' + AFieldValue + ' LIMIT 1', 'integer').ToInteger;
+
   if IsExist(FID) then
   begin
     Self.ID := FID;
