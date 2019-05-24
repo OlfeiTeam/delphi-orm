@@ -16,6 +16,7 @@ type
     procedure UpdateTable(OlfeiTable: TObject); override;
     procedure DropTable(OlfeiTable: TObject); override;
     function FieldTypeToSQL(AType: Word; ASize, ADecimalSize: integer): string; override;
+    function RandomOrder: string; override;
 
     procedure ConfirmUpdate(OlfeiTable: TObject);
   end;
@@ -376,6 +377,11 @@ end;
 function TOlfeiDriverSQLite.CheckTable(TableName: string): Boolean;
 begin
   Result := OlfeiDB.GetOnce('SELECT COUNT(name) FROM sqlite_master WHERE type = ''table'' AND name = ''' + TableName + '''', 'integer') = '1';
+end;
+
+function TOlfeiDriverSQLite.RandomOrder: string;
+begin
+	Result := 'ORDER BY random()';
 end;
 
 end.

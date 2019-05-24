@@ -16,6 +16,7 @@ type
     procedure UpdateTable(OlfeiTable: TObject); override;
     procedure DropTable(OlfeiTable: TObject); override;
     function FieldTypeToSQL(AType: Word; ASize, ADecimalSize: integer): string; override;
+    function RandomOrder: string; override;
 
     procedure ConfirmUpdate(OlfeiTable: TObject);
   end;
@@ -195,6 +196,11 @@ begin
   end;
 
   OlfeiDB.RunSQL('INSERT INTO ' + OlfeiDB.Quote + 'migrations' + OlfeiDB.Quote + ' (' + OlfeiDB.Quote + 'name' + OlfeiDB.Quote + ') VALUES ("' + Table.Migration + '")');
+end;
+
+function TOlfeiDriverMySQL.RandomOrder: string;
+begin
+	Result := 'ORDER BY rand()';
 end;
 
 end.

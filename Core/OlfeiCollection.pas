@@ -89,6 +89,7 @@ type
 
       function All(WithCache: Boolean = True): TOlfeiCollectionResult<T>;
       function First(LockBeforeUpdate: boolean = false; WithCache: Boolean = True): T;
+      function Random(LockBeforeUpdate: boolean = false; WithCache: Boolean = True): T;
       function ToJSON(WithCache: Boolean = True): TJSONArray;
   end;
 
@@ -537,6 +538,52 @@ begin
     DS := FDB.GetSQL(Self.GetResultQuery + ' LIMIT 1 FOR UPDATE')
   else
     DS := FDB.GetSQL(Self.GetResultQuery + ' LIMIT 1');
+
+  Self.Clear;
+
+  RttiContext := TRttiContext.Create;
+  RttiType := RttiContext.GetType(FParentClass);
+
+  Setlength(RttiParameters, 4);
+  RttiParameters[0] := TValue.From<TOlfeiDB>(FDB);
+  RttiParameters[1] := TValue.From<TOlfeiFilterFields>(FFilterFields);
+
+  if not DS.Eof then
+    RttiParameters[2] := TValue.From<Integer>(DS.FieldByName('id').AsInteger)
+  else
+    RttiParameters[2] := 0;
+
+  RttiParameters[3] := TValue.From<Boolean>(WithCache);
+
+  RttiValue := RttiMethodInvokeEx('Create', RttiType, RttiType.AsInstance.MetaclassType, RttiParameters);
+
+  SetLength(Elements, Length(Elements) + 1);
+  Elements[Length(Elements) - 1] := T(RttiValue.AsObject);
+
+  Result := Elements[0];
+
+  RttiContext.Free;
+
+  QueryString := '';
+  OrderString := '';
+  LimitString := '';
+
+  DS.Free;
+end;
+
+function TOlfeiCollection<T>.Random(LockBeforeUpdate: Boolean = false; WithCache: boolean = true): T;
+var
+  DS: TFDMemTable;
+
+  RttiContext: TRttiContext;
+  RttiType: TRttiType;
+  RttiValue: TValue;
+  RttiParameters: TArray<TValue>;
+begin
+  if (LockBeforeUpdate) and (FDB.Driver = 'mysql') then
+    DS := FDB.GetSQL(Self.GetResultQuery + FDB.RandomOrder + ' LIMIT 1 FOR UPDATE')
+  else
+    DS := FDB.GetSQL(Self.GetResultQuery + FDB.RandomOrder + ' LIMIT 1');
 
   Self.Clear;
 

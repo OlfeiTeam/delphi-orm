@@ -56,6 +56,7 @@ type
     procedure RollbackTransaction;
     procedure Connect;
     procedure Migrate;
+    function RandomOrder: string;
 
     function Quoted(val: string): string;
     function FullQuoted(val: string): string;
@@ -67,6 +68,11 @@ implementation
 
 uses
   {$I 'schema.inc'} OlfeiDriverSQLite, OlfeiDriverMySQL, OlfeiSchema, OlfeiSQLDriver;
+
+function TOlfeiDB.RandomOrder: string;
+begin
+  Result := (DriverConnect as TOlfeiSQLDriver).RandomOrder;
+end;
 
 destructor TOlfeiDB.Destroy;
 begin
