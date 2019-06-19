@@ -523,6 +523,12 @@ begin
       ' ' + QueryString + OrderString;
 
   FDB.RunSQL(SQL);
+
+  Self.Clear;
+
+  QueryString := '';
+  OrderString := '';
+  LimitString := '';
 end;
 
 function TOlfeiCollection<T>.First(LockBeforeUpdate: Boolean = false; WithCache: boolean = true): T;
