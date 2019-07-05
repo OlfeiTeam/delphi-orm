@@ -316,7 +316,7 @@ begin
   if StrPos(PChar(QueryString), PChar('WHERE')) = nil then
     QueryString := QueryString + 'WHERE ( '
   else
-    QueryString := QueryString + ' (';
+    QueryString := QueryString + 'AND ( ';
 
   Result := Self;
 end;
