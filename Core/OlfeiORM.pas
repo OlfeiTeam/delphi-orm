@@ -77,7 +77,7 @@ type
 
   TOlfeiCoreORM = class
   private
-    SLValues: TStringList;
+    SLValues, SLChangedFields: TStringList;
     JSONValues, BlobValues, OlfeiCollections, OlfeiForeigns: array of TObject;
     FFieldName: string;
     function PackFloat(Value: string): string;
@@ -295,6 +295,7 @@ begin
   DBConnection := FDB;
 
   SLValues := TStringList.Create;
+  SLChangedFields := TStringList.Create;
 
   //if Isset(FID) then
   //begin
@@ -393,6 +394,7 @@ begin
   DBConnection := FDB;
 
   SLValues := TStringList.Create;
+  SLChangedFields := TStringList.Create;
 
   //if Isset(FID) then
   //begin
@@ -491,6 +493,7 @@ begin
   DBConnection := FDB;
 
   SLValues := TStringList.Create;
+  SLChangedFields := TStringList.Create;
 
   //if Isset(FID) then
   //begin
@@ -609,6 +612,7 @@ begin
   DBConnection := FDB;
 
   SLValues := TStringList.Create;
+  SLChangedFields := TStringList.Create;
 
   //if Isset(FID) then
   //begin
@@ -627,6 +631,7 @@ begin
     FJSONObject.Free;
 
   SLValues.Free;
+  SLChangedFields.Free;
 
   for i := Length(BlobValues) - 1 downto 0 do
     if Assigned(BlobValues[i]) then
@@ -884,7 +889,7 @@ begin
     if Self.Exists then
     begin
       for i := 0 to Length(Fields) - 1 do
-        if (Fields[i].Name <> 'created_at') and (Fields[i].Name <> '') and (Fields[i].Name <> 'updated_at') then
+        if (SLChangedFields.Values[Fields[i].Name] = '1') and (Fields[i].Name <> 'created_at') and (Fields[i].Name <> '') and (Fields[i].Name <> 'updated_at') then
           Query := Query + DBConnection.Quote + Fields[i].Name + DBConnection.Quote + ' = "' + Self.FormatValueByField(i) + '",';
 
       for i := 0 to Length(ForeignFields) - 1 do
@@ -900,9 +905,12 @@ begin
             if ((BlobValues[i] as TStringStream).Size > 0) and (BlobFields[i].Name <> '') then
               Query := Query + DBConnection.Quote + BlobFields[i].Name + DBConnection.Quote + ' = ' + DBConnection.FullQuoted((BlobValues[i] as TStringStream).DataString) + ',';
 
-      SetLength(Query, Length(Query) - 1);
+      if Length(Query) > 0 then
+      begin
+        SetLength(Query, Length(Query) - 1);
 
-      DBConnection.RunSQL('UPDATE ' + DBConnection.Quote + Table + DBConnection.Quote + ' SET ' + Query + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = "' + ID.ToString() + '"');
+        DBConnection.RunSQL('UPDATE ' + DBConnection.Quote + Table + DBConnection.Quote + ' SET ' + Query + ' WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = "' + ID.ToString() + '"');
+      end;
 
       if Self.UseTimestamps then
         DBConnection.RunSQL('UPDATE ' + DBConnection.Quote + Table + DBConnection.Quote + ' SET ' + DBConnection.Quote + 'updated_at' + DBConnection.Quote + ' = "' + FormatDateTime('yyyy-mm-dd hh:nn:ss', Now()) + '" WHERE ' + DBConnection.Quote + 'id' + DBConnection.Quote + ' = "' + ID.ToString() + '"');
@@ -1069,6 +1077,7 @@ end;
 procedure TOlfeiCoreORM.SetDateTime(index: Integer; Value: TDateTime);
 begin
   SLValues.Values[IndexToField(index)] := FormatDateTime(FormatSettings.ShortDateFormat + ' ' + FormatSettings.LongTimeFormat, Value);
+  SLChangedFields.Values[IndexToField(index)] := '1';
 end;
 
 function TOlfeiCoreORM.GetBlob(index: Integer): TStringStream;
@@ -1109,6 +1118,7 @@ end;
 procedure TOlfeiCoreORM.SetDate(index: Integer; Value: TDate);
 begin
   SLValues.Values[IndexToField(index)] := FormatDateTime(FormatSettings.ShortDateFormat, Value);
+  SLChangedFields.Values[IndexToField(index)] := '1';
 end;
 
 function TOlfeiCoreORM.GetBoolean(index: Integer): Boolean;
@@ -1122,6 +1132,7 @@ end;
 procedure TOlfeiCoreORM.SetBoolean(index: Integer; Value: Boolean);
 begin
   SLValues.Values[IndexToField(index)] := OlfeiBoolToStr(Value).ToString();
+  SLChangedFields.Values[IndexToField(index)] := '1';
 end;
 
 function TOlfeiCoreORM.GetInteger(index: Integer): Integer;
@@ -1135,6 +1146,7 @@ end;
 procedure TOlfeiCoreORM.SetInteger(index: Integer; Value: Integer);
 begin
   SLValues.Values[IndexToField(index)] := Value.ToString();
+  SLChangedFields.Values[IndexToField(index)] := '1';
 end;
 
 function TOlfeiCoreORM.GetColor(index: Integer): TAlphaColor;
@@ -1148,6 +1160,7 @@ end;
 procedure TOlfeiCoreORM.SetColor(index: Integer; Value: TAlphaColor);
 begin
   SLValues.Values[IndexToField(index)] := Integer(Value).ToString();
+  SLChangedFields.Values[IndexToField(index)] := '1';
 end;
 
 function TOlfeiCoreORM.GetFloat(index: Integer): Real;
@@ -1161,6 +1174,7 @@ end;
 procedure TOlfeiCoreORM.SetFloat(index: Integer; Value: Real);
 begin
   SLValues.Values[IndexToField(index)] := PackFloat(FloatToStr(Value));
+  SLChangedFields.Values[IndexToField(index)] := '1';
 end;
 
 function TOlfeiCoreORM.GetString(Index: Integer): string;
@@ -1174,6 +1188,7 @@ end;
 procedure TOlfeiCoreORM.SetString(index: Integer; Value: string);
 begin
   SLValues.Values[IndexToField(index)] := PrepareValue('string', Value);
+  SLChangedFields.Values[IndexToField(index)] := '1';
 end;
 
 function TOlfeiCoreORM.PrepareValue(ValueType: string; Value: string): string;
