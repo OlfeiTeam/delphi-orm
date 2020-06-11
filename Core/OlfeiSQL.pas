@@ -232,8 +232,13 @@ end;
 
 procedure TOlfeiDB.SetDebugFile(FileName: string);
 begin
-  IsDebug := True;
-  DebugFileName := FileName;
+  if FileName <> '' then
+  begin
+    IsDebug := True;
+    DebugFileName := FileName;
+  end
+  else
+    IsDebug := false;
 end;
 
 procedure TOlfeiDB.Migrate;

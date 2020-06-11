@@ -53,6 +53,7 @@ type
       property RemoteTable: string read FRemoteTable write FRemoteTable;
       property LocalKey: string read FLocalKey write FLocalKey;
       property RemoteValue: string read FRemoteValue write FRemoteValue;
+      property Table: string read FTable;
 
       function Where(Name, Comparison, Value: String): TOlfeiCollection<T>; overload;
       function Where(Name, Value: string): TOlfeiCollection<T>; overload;
@@ -226,7 +227,7 @@ end;
 
 function TOlfeiCollection<T>.Distinct(Field: string): TOlfeiCollection<T>;
 begin
-  DistinctString := ' DISTINCT ' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ' ';
+  DistinctString := ' DISTINCT ' + FDB.Quote + FTable + FDB.Quote + '.' + FDB.Quote + Field + FDB.Quote + ', ';
 
   Result := Self;
 end;
