@@ -9,8 +9,12 @@ uses Classes, Sysutils,
   FireDAC.Comp.Client, FireDAC.Phys.SQLite, FireDAC.DApt, Data.DB,
   System.IniFiles, System.Threading, System.IOUtils, JSON
 
+  {$IFDEF VER340}
+   , FireDAC.Phys.SQLiteWrapper.Stat
+  {$ENDIF}
+
   {$IFDEF MSWINDOWS}
-    ,FireDAC.Phys.MySQL
+    , FireDAC.Phys.MySQL
   {$ENDIF};
 
 type
@@ -367,6 +371,7 @@ begin
 end;
 
 end.
+
 
 
 
