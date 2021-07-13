@@ -45,10 +45,10 @@ begin
   OlfeiDB := TOlfeiDB.Create;
 
   OlfeiDB.Parameters.Values['driver'] := 'mysql';
-  OlfeiDB.Parameters.Values['host'] := '192.168.1.6';
+  OlfeiDB.Parameters.Values['host'] := '127.0.0.1';
   OlfeiDB.Parameters.Values['database'] := 'test';
-  OlfeiDB.Parameters.Values['user'] := 'hrc';
-  OlfeiDB.Parameters.Values['password'] := 'hrc.lan';
+  OlfeiDB.Parameters.Values['user'] := 'root';
+  OlfeiDB.Parameters.Values['password'] := '';
 
   //OlfeiDB.Parameters.Values['driver'] := 'sqlite';
   //OlfeiDB.Parameters.Values['database'] := './test.sqlite';
@@ -58,7 +58,7 @@ begin
   OlfeiUser := TOlfeiUser.Create(OlfeiDB);
   OlfeiUser.Find(1);
 
-  OlfeiUser.Attach();
+  // OlfeiUser.Attach();
   OlfeiUser.Avatar.LoadFromFile(ExtractFilePath(ParamStr(0)) + 'test.txt');
 
   OlfeiUser.Save;
@@ -79,6 +79,9 @@ begin
   OlfeiUser.Save;
 
   OlfeiUser.Free;
+
+  OlfeiDB.Backup('test.sql');
+
   OlfeiDB.Free;
 end;
 

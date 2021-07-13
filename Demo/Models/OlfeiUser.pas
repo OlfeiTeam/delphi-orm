@@ -39,7 +39,7 @@ type
       [TOlfeiForeignField('id', 'user_id')]
       property Images: TOlfeiImage index 0 read GetOlfeiImage;
 
-      [TOlfeiPivotField('user_friend', 'user_id', 'friend_id')]
+      [TOlfeiPivotField('user_friend', 'user_id', 'id', 'friend_id', 'id')]
       property Friends: TOlfeiCollection<TOlfeiUser> index 1 read GetOlfeiFriends;
   end;
 

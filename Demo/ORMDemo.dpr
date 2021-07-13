@@ -1,7 +1,6 @@
 program ORMDemo;
 
 uses
-  FastMM4,
   System.StartUpCopy,
   FMX.Forms,
   ORMDemoMain in 'ORMDemoMain.pas' {frmMain},
