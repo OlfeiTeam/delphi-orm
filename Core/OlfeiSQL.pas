@@ -66,6 +66,7 @@ type
     function FullQuoted(val: string): string;
     function Raw(val: string): string;
     procedure SetDebugFile(FileName: string);
+    procedure Backup(FileName: string);
   end;
 
 implementation
@@ -368,6 +369,60 @@ begin
   SQLConnection.TxOptions.AutoCommit := True;
   SQLConnection.TxOptions.AutoStart := True;
   SQLConnection.TxOptions.AutoStop := True;
+end;
+
+procedure TOlfeiDB.Backup(FileName: string);
+var
+  DSMain, DSFields, DSSchema: TFDMemTable;
+  TableName, Schema, InsertData: string;
+  i: integer;
+  SL: TStringList;
+begin
+  DSMain := Self.GetSQL('SHOW TABLES');
+  SL := TStringList.Create;
+
+  while not DSMain.Eof do
+  begin
+    TableName := DSMain.FieldByName('Tables_in_' + Parameters.Values['database']).AsString;
+
+    DSSchema := Self.GetSQL('SHOW CREATE TABLE ' + TableName);
+    Schema := DSSchema.Fields[1].AsString + ';' + #10#13;
+
+    SL.Add(Schema);
+
+    DSSchema.Close;
+    DSSchema.Free;
+
+    DSFields := Self.GetSQL('SELECT * FROM ' + TableName);
+    InsertData := '';
+
+    while not DSFields.Eof do
+    begin
+      InsertData := 'INSERT INTO ' + TableName + ' VALUES (';
+
+      for i := 0 to DSFields.FieldCount - 1 do
+        InsertData := InsertData + '"' + DSFields.Fields[i].AsString + '",';
+
+      SetLength(InsertData, Length(InsertData) - 1);
+      InsertData := InsertData + ');';
+
+      SL.Add(InsertData);
+
+      DSFields.Next;
+    end;
+
+    DSFields.Close;
+    DSFields.Free;
+
+    DSMain.Next;
+  end;
+
+  SL.SaveToFile(FileName);
+
+  SL.Free;
+
+  DSMain.Close;
+  DSMain.Free;
 end;
 
 end.
