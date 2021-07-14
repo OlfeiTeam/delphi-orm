@@ -66,7 +66,7 @@ type
     function FullQuoted(val: string): string;
     function Raw(val: string): string;
     procedure SetDebugFile(FileName: string);
-    procedure Backup(FileName: string);
+    procedure Backup(FileName: string; DatabaseName: string = '');
   end;
 
 implementation
@@ -371,7 +371,7 @@ begin
   SQLConnection.TxOptions.AutoStop := True;
 end;
 
-procedure TOlfeiDB.Backup(FileName: string);
+procedure TOlfeiDB.Backup(FileName: string; DatabaseName: string = '');
 var
   DSMain, DSFields, DSSchema: TFDMemTable;
   TableName, Schema, InsertData: string;
@@ -383,7 +383,10 @@ begin
 
   while not DSMain.Eof do
   begin
-    TableName := DSMain.FieldByName('Tables_in_' + Parameters.Values['database']).AsString;
+    if DatabaseName = '' then
+      TableName := DSMain.FieldByName('Tables_in_' + Parameters.Values['database']).AsString
+    else
+      TableName := DSMain.FieldByName('Tables_in_' + DatabaseName).AsString;
 
     DSSchema := Self.GetSQL('SHOW CREATE TABLE ' + TableName);
     Schema := DSSchema.Fields[1].AsString + ';' + #10#13;
@@ -410,6 +413,8 @@ begin
 
       DSFields.Next;
     end;
+
+    SL.Add(#10#13);
 
     DSFields.Close;
     DSFields.Free;
